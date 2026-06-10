@@ -1,0 +1,101 @@
+# 🔮 lucid
+
+> A continuous AI agent that **triages every new issue the moment it's filed**. It researches the issue against the actual codebase and your `VISION.md`, then posts an **ICE** or **RICE** priority score as a comment — with the reasoning and the math shown. **Powered by [opencode](https://opencode.ai).** Part of [agent-foundry](../README.md).
+
+lucid completes the loop with [**daydream**](../daydream/README.md) (which files new issues) and [**nightwatch**](../nightwatch/README.md) (which turns issues into PRs): daydream surfaces work, **lucid tells you what it's worth**, nightwatch does it.
+
+## What it does
+
+When an issue is opened (or on manual dispatch):
+
+1. **Reads the issue** — title, body, and any discussion.
+2. **Reads `VISION.md`** at your repo root (if present) to judge how well the issue aligns with your long-term direction.
+3. **Researches the codebase in depth** — which files and subsystems the issue touches, implementation complexity, blast radius, and the value delivered. Every scoring factor is grounded in real findings, not generic heuristics.
+4. **Posts a score comment** on the issue: a factor table with per-factor reasoning, the formula with the actual numbers plugged in, and an overall assessment.
+
+The agent proposes the factor values; the action validates them and computes the final score itself, so the arithmetic in the comment is always consistent.
+
+## Scoring methods
+
+**ICE** (default) — quick and simple. Each factor is 1–10:
+
+> ICE = Impact × Confidence × Ease  (range 1–1000, higher = prioritize)
+
+**RICE** — more rigorous, effort-aware:
+
+> RICE = (Reach × Impact × Confidence) ÷ Effort
+
+where Reach is how many users/contributors are affected per quarter, Impact is the effect per person reached (0.25–3), Confidence is 0–1, and Effort is in person-months. Higher = more value per unit of effort.
+
+Pick with the `method` input (`ice` / `rice`).
+
+## Usage
+
+Add a workflow (see [`examples/lucid-agent.yaml`](../examples/lucid-agent.yaml)):
+
+```yaml
+name: lucid-agent
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue number to score"
+        required: true
+        type: string
+
+concurrency:
+  group: lucid-agent-${{ github.event.issue.number || github.event.inputs.issue }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  lucid:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chamoda/agent-foundry/lucid@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          opencode-api-key: ${{ secrets.OPENCODE_API_KEY }}
+```
+
+> **Note:** issues created by other workflows running with the default `GITHUB_TOKEN` (e.g. daydream) do **not** trigger `issues: opened` workflows — GitHub deliberately doesn't chain workflows off that token. To have lucid score daydream's issues automatically, give daydream a PAT as its `github-token`; otherwise score them manually via `workflow_dispatch`.
+
+## Inputs
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `github-token` | `${{ github.token }}` | Token used to read the issue and post the comment. |
+| `opencode-api-key` | `""` | OpenCode Zen API key, only if the model requires auth. |
+| `model` | `opencode/mimo-v2.5-free` | opencode model id (`provider/model`). |
+| `variant` | `high` | Reasoning effort (`high`/`max`/`minimal`); empty disables. |
+| `plan` | `true` | Research (read-only) before scoring. `false` = single pass. |
+| `method` | `ice` | Scoring method: `ice` or `rice`. |
+| `vision-file` | `VISION.md` | Path to the maintainer vision file, used to judge impact/alignment. |
+
+## Requirements
+
+- Checkout the repo before this action (it reads code + `VISION.md`).
+- **Permissions:** the job needs `contents: read` and `issues: write`.
+- **`OPENCODE_API_KEY`** *(optional)* — set it if your chosen model needs auth.
+
+## Example comment
+
+> ## 🔮 lucid — ICE score: **336 / 1000**
+>
+> | Factor | Score (1–10) | Reasoning |
+> |--------|--------------|-----------|
+> | Impact | 7 | Fixes a data-loss path in `app/sync.py` hit by every offline user. |
+> | Confidence | 8 | The failing code path is clearly identifiable; fix is well-understood. |
+> | Ease | 6 | Contained to one module, but needs a migration and new tests. |
+>
+> **How this was calculated:** ICE = Impact × Confidence × Ease = 7 × 8 × 6 = **336**. Each factor ranges 1–10, so scores range 1–1000; a higher score means a stronger candidate to prioritize.
+
+## License
+
+MIT — see [LICENSE](../LICENSE).

@@ -1,0 +1,30 @@
+name: lucid-agent
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue number to score"
+        required: true
+        type: string
+
+# One run per issue at a time (it posts comments).
+concurrency:
+  group: lucid-agent-${{ github.event.issue.number || github.event.inputs.issue }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  lucid:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chamoda/agent-foundry/lucid@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          opencode-api-key: ${{ secrets.OPENCODE_API_KEY }}
+          # method: rice   # default is ice

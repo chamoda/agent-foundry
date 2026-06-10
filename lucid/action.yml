@@ -1,0 +1,66 @@
+name: "lucid-agent"
+description: "Researches newly opened issues in depth and posts an ICE/RICE priority score as a comment. Powered by opencode."
+author: "Chamoda Pandithage"
+branding:
+  icon: "eye"
+  color: "purple"
+
+inputs:
+  github-token:
+    description: "Token for the gh API (reads the issue, posts the score comment)."
+    required: true
+    default: ${{ github.token }}
+  opencode-api-key:
+    description: "OpenCode Zen API key, if the configured model requires auth."
+    required: false
+    default: ""
+  model:
+    description: "opencode model id (provider/model)."
+    required: false
+    default: "opencode/mimo-v2.5-free"
+  variant:
+    description: "Reasoning effort passed to `opencode run --variant` (high/max/minimal). Empty to disable."
+    required: false
+    default: "high"
+  plan:
+    description: "Research first (read-only plan agent) then write. Set 'false' for a single pass."
+    required: false
+    default: "true"
+  method:
+    description: "Scoring method: 'ice' (Impact × Confidence × Ease) or 'rice' ((Reach × Impact × Confidence) ÷ Effort)."
+    required: false
+    default: "ice"
+  vision-file:
+    description: "Path (relative to repo root) of the maintainer vision file, used to judge impact/alignment."
+    required: false
+    default: "VISION.md"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Install opencode
+      shell: bash
+      run: curl -fsSL https://opencode.ai/install | bash
+
+    - name: Run lucid-agent
+      shell: bash
+      env:
+        OPENCODE_MODEL: ${{ inputs.model }}
+        OPENCODE_VARIANT: ${{ inputs.variant }}
+        OPENCODE_PLAN: ${{ inputs.plan }}
+        SCORE_METHOD: ${{ inputs.method }}
+        VISION_FILE: ${{ inputs.vision-file }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
+        # Event context (set by GitHub on the consumer's workflow run).
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+        DISPATCH_ISSUE: ${{ github.event.inputs.issue }}
+      run: |
+        export PATH="$HOME/.opencode/bin:$PATH"
+        # Run from the consumer's checked-out repo (cwd). $GITHUB_ACTION_PATH is
+        # this action's directory inside the monorepo; uv discovers the
+        # workspace root above it and uses the shared lockfile.
+        uv run --project "$GITHUB_ACTION_PATH" python -m lucid

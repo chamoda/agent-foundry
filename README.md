@@ -6,8 +6,9 @@
 |-------|--------------|-----------|
 | 🌙 [**nightwatch**](nightwatch/) | Picks up open issues and proposes solutions as pull requests, then revises them when reviewers request changes. | `chamoda/agent-foundry/nightwatch@v1` |
 | 💭 [**daydream**](daydream/) | Researches the codebase and your `VISION.md`, then files thoughtful, well-researched new issues. | `chamoda/agent-foundry/daydream@v1` |
+| 🔮 [**lucid**](lucid/) | Triages each newly opened issue: researches it in depth and posts an ICE/RICE priority score as a comment. | `chamoda/agent-foundry/lucid@v1` |
 
-Together they keep a project's momentum going: daydream surfaces *what* to do, nightwatch *does* it.
+Together they keep a project's momentum going: daydream surfaces *what* to do, lucid says *what it's worth*, nightwatch *does* it.
 
 ## Quick start
 
@@ -36,6 +37,7 @@ core/        foundry-core  — shared library (env config, shell helpers,
              the opencode driver, GitHub utilities, artifact parsing)
 nightwatch/  action.yml + nightwatch-agent package (depends on foundry-core)
 daydream/    action.yml + daydream-agent package  (depends on foundry-core)
+lucid/       action.yml + lucid-agent package     (depends on foundry-core)
 examples/    ready-to-copy consumer workflows
 ```
 

@@ -1,0 +1,22 @@
+[project]
+name = "lucid-agent"
+version = "1.0.0"
+description = "Continuous AI agent that researches newly opened issues and posts an ICE/RICE priority score as a comment. Powered by opencode."
+requires-python = ">=3.12"
+dependencies = [
+    "foundry-core",
+    "PyGithub>=2.3",
+]
+
+[project.scripts]
+lucid = "lucid.agent:main"
+
+[tool.uv.sources]
+foundry-core = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lucid"]
