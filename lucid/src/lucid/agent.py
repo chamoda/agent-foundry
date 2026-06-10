@@ -11,13 +11,16 @@ Each run:
 3. Researches the codebase in depth: which files/subsystems the issue touches,
    how hard it is to implement, and how much value it delivers.
 4. Scores the issue with **ICE** (Impact × Confidence × Ease, the default) or
-   **RICE** ((Reach × Impact × Confidence) ÷ Effort) and posts the score as a
-   comment on the issue, with per-factor reasoning and the formula spelled out.
+   **RICE** ((Reach × Impact × Confidence) ÷ Effort), normalizes the result to
+   an integer **1–10**, posts a compact comment with the calculation, and adds
+   an ``ice-<n>`` / ``rice-<n>`` label to the issue.
 
 opencode runs in two phases: a read-only ``plan`` agent researches, then the
 ``build`` agent writes a structured score artifact. This script validates the
 factors and computes the final score itself, so the arithmetic in the comment
-is always consistent.
+is always consistent. Normalization to 1–10: ICE takes the geometric mean of
+the three 1–10 factors; RICE (unbounded) is mapped with ``log2(raw + 1)`` and
+clamped, so each +1 means roughly double the value per unit of effort.
 
 Required env: ``GITHUB_REPOSITORY``, ``GITHUB_TOKEN``, and the issue number
 via ``ISSUE_NUMBER`` (set from the event) or ``DISPATCH_ISSUE``.
@@ -28,6 +31,7 @@ default ``ice``), ``VISION_FILE`` (default ``VISION.md``).
 
 from __future__ import annotations
 
+import math
 import os
 import sys
 from dataclasses import dataclass
@@ -35,7 +39,7 @@ from dataclasses import dataclass
 from github import Github
 from github.Issue import Issue
 
-from foundry_core import Opencode, env, log
+from foundry_core import Opencode, ensure_label, env, log
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the score here (in the consumer's checked-out repo).
@@ -168,8 +172,8 @@ def build_instructions(method: str) -> str:
             f"Write your score to ./{ARTIFACT} in the repository root as valid "
             "JSON ONLY (no surrounding prose, no markdown fences), with keys:",
             *keys,
-            '  - "summary": a short paragraph with your overall assessment, '
-            "including how the issue aligns with the maintainer vision",
+            '  - "summary": a 1–2 sentence overall assessment, including how '
+            "the issue aligns with the maintainer vision",
             "Do NOT comment on the issue yourself and do NOT touch git.",
         ]
     )
@@ -196,48 +200,69 @@ def number(data: dict, key: str, lo: float, hi: float) -> float | None:
     return value
 
 
-def cell(text: object) -> str:
-    """Make free text safe inside a one-line markdown table cell."""
-    return str(text).replace("\n", " ").replace("|", "\\|").strip()
+def oneline(text: object) -> str:
+    return str(text).replace("\n", " ").strip()
 
 
 def rationale_for(data: dict, key: str) -> str:
     rationale = data.get("rationale") or {}
-    return cell(rationale.get(key) or "(no rationale given)")
+    return oneline(rationale.get(key) or "(no rationale given)")
 
 
-def summary_block(data: dict) -> list[str]:
-    summary = str(data.get("summary") or "").strip()
-    return ["", "### Assessment", summary] if summary else []
+def clamp_1_10(value: float) -> int:
+    return max(1, min(10, round(value)))
 
 
-def render_ice(data: dict) -> str | None:
+def comment_body(
+    method: str,
+    score: int,
+    factor_line: str,
+    calc_line: str,
+    data: dict,
+    rationale_keys: list[str],
+) -> str:
+    summary = oneline(data.get("summary") or "")
+    lines = [
+        f"### 🔮 {method.upper()} score: **{score}/10**",
+        "",
+        factor_line,
+        f"<sub>{calc_line}</sub>",
+    ]
+    if summary:
+        lines += ["", summary]
+    lines += [
+        "",
+        "<details><summary>Factor reasoning</summary>",
+        "",
+        *[f"- **{key.capitalize()}** — {rationale_for(data, key)}" for key in rationale_keys],
+        "",
+        "</details>",
+    ]
+    return "\n".join(lines)
+
+
+def render_ice(data: dict) -> tuple[int, str] | None:
     impact = number(data, "impact", 1, 10)
     confidence = number(data, "confidence", 1, 10)
     ease = number(data, "ease", 1, 10)
     if impact is None or confidence is None or ease is None:
         return None
-    score = impact * confidence * ease
-    return "\n".join(
-        [
-            f"## 🔮 lucid — ICE score: **{fmt(score)} / 1000**",
-            "",
-            "| Factor | Score (1–10) | Reasoning |",
-            "|--------|--------------|-----------|",
-            f"| Impact | {fmt(impact)} | {rationale_for(data, 'impact')} |",
-            f"| Confidence | {fmt(confidence)} | {rationale_for(data, 'confidence')} |",
-            f"| Ease | {fmt(ease)} | {rationale_for(data, 'ease')} |",
-            "",
-            "**How this was calculated:** ICE = Impact × Confidence × Ease = "
-            f"{fmt(impact)} × {fmt(confidence)} × {fmt(ease)} = **{fmt(score)}**. "
-            "Each factor ranges 1–10, so scores range 1–1000; a higher score "
-            "means a stronger candidate to prioritize.",
-            *summary_block(data),
-        ]
+    raw = impact * confidence * ease
+    score = clamp_1_10(math.cbrt(raw))
+    factor_line = (
+        f"Impact {fmt(impact)} · Confidence {fmt(confidence)} · Ease {fmt(ease)}"
+    )
+    calc_line = (
+        f"Score = geometric mean of the 1–10 factors: "
+        f"∛({fmt(impact)} × {fmt(confidence)} × {fmt(ease)}) = ∛{fmt(raw)} ≈ "
+        f"{math.cbrt(raw):.1f} → **{score}**. Higher = prioritize."
+    )
+    return score, comment_body(
+        "ice", score, factor_line, calc_line, data, ["impact", "confidence", "ease"]
     )
 
 
-def render_rice(data: dict) -> str | None:
+def render_rice(data: dict) -> tuple[int, str] | None:
     reach = number(data, "reach", 0, 1e9)
     impact = number(data, "impact", 0.25, 3)
     confidence = number(data, "confidence", 0, 100)
@@ -246,28 +271,51 @@ def render_rice(data: dict) -> str | None:
         return None
     if confidence > 1:  # tolerate percentages (e.g. 80 instead of 0.8)
         confidence /= 100
-    score = reach * impact * confidence / effort
-    reach_unit = cell(data.get("reach_unit") or "per quarter")
-    return "\n".join(
-        [
-            f"## 🔮 lucid — RICE score: **{fmt(round(score, 1))}**",
-            "",
-            "| Factor | Value | Reasoning |",
-            "|--------|-------|-----------|",
-            f"| Reach | {fmt(reach)} ({reach_unit}) | {rationale_for(data, 'reach')} |",
-            f"| Impact | {fmt(impact)} | {rationale_for(data, 'impact')} |",
-            f"| Confidence | {fmt(confidence * 100)}% | {rationale_for(data, 'confidence')} |",
-            f"| Effort | {fmt(effort)} person-months | {rationale_for(data, 'effort')} |",
-            "",
-            "**How this was calculated:** RICE = (Reach × Impact × Confidence) ÷ Effort = "
-            f"({fmt(reach)} × {fmt(impact)} × {fmt(confidence)}) ÷ {fmt(effort)} = "
-            f"**{fmt(round(score, 1))}**. Reach is how many are affected per period, "
-            "impact is the effect per person reached (0.25–3), confidence discounts "
-            "uncertain estimates (0–1), and effort is in person-months; a higher "
-            "score means more value per unit of effort.",
-            *summary_block(data),
-        ]
+    raw = reach * impact * confidence / effort
+    score = clamp_1_10(math.log2(raw + 1))
+    reach_unit = oneline(data.get("reach_unit") or "per quarter")
+    factor_line = (
+        f"Reach {fmt(reach)} ({reach_unit}) · Impact {fmt(impact)} · "
+        f"Confidence {fmt(confidence * 100)}% · Effort {fmt(effort)} person-months"
     )
+    calc_line = (
+        f"Raw RICE = (Reach × Impact × Confidence) ÷ Effort = "
+        f"({fmt(reach)} × {fmt(impact)} × {fmt(confidence)}) ÷ {fmt(effort)} = "
+        f"{fmt(round(raw, 1))}; score = log₂(raw + 1) ≈ {math.log2(raw + 1):.1f}, "
+        f"clamped to 1–10 → **{score}** (each +1 ≈ double the value per effort)."
+    )
+    return score, comment_body(
+        "rice",
+        score,
+        factor_line,
+        calc_line,
+        data,
+        ["reach", "impact", "confidence", "effort"],
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Labels
+# --------------------------------------------------------------------------- #
+
+
+def label_color(score: int) -> str:
+    if score >= 7:
+        return "0e8a16"  # green
+    if score >= 4:
+        return "fbca04"  # yellow
+    return "d93f0b"  # orange/red
+
+
+def apply_score_label(issue: Issue, method: str, score: int) -> None:
+    """Add ``ice-<n>``/``rice-<n>``, replacing any stale score label."""
+    label = f"{method}-{score}"
+    for existing in issue.labels:
+        if existing.name.startswith(("ice-", "rice-")) and existing.name != label:
+            issue.remove_from_labels(existing)
+    ensure_label(issue.repository, label, label_color(score))
+    issue.add_to_labels(label)
+    log(f"Labeled issue #{issue.number} with {label}.")
 
 
 # --------------------------------------------------------------------------- #
@@ -296,16 +344,20 @@ def main() -> None:
         sys.exit("lucid: opencode did not produce a usable score artifact.")
 
     render = render_ice if settings.method == "ice" else render_rice
-    comment = render(data)
-    if comment is None:
+    result = render(data)
+    if result is None:
         sys.exit("lucid: score artifact failed validation; no comment posted.")
+    score, comment = result
 
     comment += (
-        "\n\n<sub>🔮 Scored by [lucid-agent](https://github.com/chamoda/agent-foundry), "
+        "\n<sub>🔮 Scored by [lucid-agent](https://github.com/chamoda/agent-foundry), "
         "powered by [opencode](https://opencode.ai).</sub>"
     )
     issue.create_comment(comment)
-    log(f"Posted {settings.method.upper()} score comment on issue #{issue.number}.")
+    apply_score_label(issue, settings.method, score)
+    log(
+        f"Posted {settings.method.upper()} score {score}/10 on issue #{issue.number}."
+    )
 
 
 if __name__ == "__main__":

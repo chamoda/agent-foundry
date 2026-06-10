@@ -1,6 +1,6 @@
 # 🔮 lucid
 
-> A continuous AI agent that **triages every new issue the moment it's filed**. It researches the issue against the actual codebase and your `VISION.md`, then posts an **ICE** or **RICE** priority score as a comment — with the reasoning and the math shown. **Powered by [opencode](https://opencode.ai).** Part of [agent-foundry](../README.md).
+> A continuous AI agent that **triages every new issue the moment it's filed**. It researches the issue against the actual codebase and your `VISION.md`, scores it **1–10** with **ICE** or **RICE**, posts a compact comment showing the math, and labels the issue `ice-7` / `rice-4`. **Powered by [opencode](https://opencode.ai).** Part of [agent-foundry](../README.md).
 
 lucid completes the loop with [**daydream**](../daydream/README.md) (which files new issues) and [**nightwatch**](../nightwatch/README.md) (which turns issues into PRs): daydream surfaces work, **lucid tells you what it's worth**, nightwatch does it.
 
@@ -11,21 +11,24 @@ When an issue is opened (or on manual dispatch):
 1. **Reads the issue** — title, body, and any discussion.
 2. **Reads `VISION.md`** at your repo root (if present) to judge how well the issue aligns with your long-term direction.
 3. **Researches the codebase in depth** — which files and subsystems the issue touches, implementation complexity, blast radius, and the value delivered. Every scoring factor is grounded in real findings, not generic heuristics.
-4. **Posts a score comment** on the issue: a factor table with per-factor reasoning, the formula with the actual numbers plugged in, and an overall assessment.
+4. **Posts a compact score comment** — the final **1–10 score**, the factor values, the calculation in one line, and per-factor reasoning folded into a collapsible section.
+5. **Labels the issue** `ice-<score>` / `rice-<score>` (e.g. `ice-7`), color-coded red/yellow/green by band, replacing any stale score label on re-runs — so you can sort and filter the issue list by priority.
 
 The agent proposes the factor values; the action validates them and computes the final score itself, so the arithmetic in the comment is always consistent.
 
 ## Scoring methods
 
+Both methods produce an **integer score from 1 to 10** (higher = prioritize).
+
 **ICE** (default) — quick and simple. Each factor is 1–10:
 
-> ICE = Impact × Confidence × Ease  (range 1–1000, higher = prioritize)
+> score = ∛(Impact × Confidence × Ease) — the geometric mean of the factors, rounded.
 
 **RICE** — more rigorous, effort-aware:
 
-> RICE = (Reach × Impact × Confidence) ÷ Effort
+> raw = (Reach × Impact × Confidence) ÷ Effort, then score = log₂(raw + 1), clamped to 1–10.
 
-where Reach is how many users/contributors are affected per quarter, Impact is the effect per person reached (0.25–3), Confidence is 0–1, and Effort is in person-months. Higher = more value per unit of effort.
+where Reach is how many users/contributors are affected per quarter, Impact is the effect per person reached (0.25–3), Confidence is 0–1, and Effort is in person-months. Raw RICE is unbounded, so the log scale means each +1 of score ≈ double the value per unit of effort.
 
 Pick with the `method` input (`ice` / `rice`).
 
@@ -86,15 +89,22 @@ jobs:
 
 ## Example comment
 
-> ## 🔮 lucid — ICE score: **336 / 1000**
+> ### 🔮 ICE score: **7/10**
 >
-> | Factor | Score (1–10) | Reasoning |
-> |--------|--------------|-----------|
-> | Impact | 7 | Fixes a data-loss path in `app/sync.py` hit by every offline user. |
-> | Confidence | 8 | The failing code path is clearly identifiable; fix is well-understood. |
-> | Ease | 6 | Contained to one module, but needs a migration and new tests. |
+> Impact 7 · Confidence 8 · Ease 6
+> <sub>Score = geometric mean of the 1–10 factors: ∛(7 × 8 × 6) = ∛336 ≈ 7.0 → **7**. Higher = prioritize.</sub>
 >
-> **How this was calculated:** ICE = Impact × Confidence × Ease = 7 × 8 × 6 = **336**. Each factor ranges 1–10, so scores range 1–1000; a higher score means a stronger candidate to prioritize.
+> Fixes a data-loss path hit by every offline user; strongly aligned with the sync-reliability goal in VISION.md.
+>
+> <details><summary>Factor reasoning</summary>
+>
+> - **Impact** — Fixes a data-loss path in `app/sync.py` hit by every offline user.
+> - **Confidence** — The failing code path is clearly identifiable; fix is well-understood.
+> - **Ease** — Contained to one module, but needs a migration and new tests.
+>
+> </details>
+
+…and the issue gets an `ice-7` label.
 
 ## License
 
