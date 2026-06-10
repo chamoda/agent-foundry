@@ -4,9 +4,9 @@
 
 | Agent | What it does | Use it as |
 |-------|--------------|-----------|
-| 🌙&nbsp;[**nightwatch**](nightwatch/) | Picks up open issues and proposes solutions as pull requests, then revises them when reviewers request changes. | `chamoda/agent-foundry/nightwatch@v1` |
 | 💭&nbsp;[**daydream**](daydream/) | Researches the codebase and your `VISION.md`, then files thoughtful, well-researched new issues. | `chamoda/agent-foundry/daydream@v1` |
 | 🔮&nbsp;[**lucid**](lucid/) | Triages each newly opened issue: researches it in depth, posts a 1–10 ICE/RICE priority score as a comment, and labels it `ice-7`. | `chamoda/agent-foundry/lucid@v1` |
+| 🌙&nbsp;[**nightwatch**](nightwatch/) | Picks up open issues and proposes solutions as pull requests, then revises them when reviewers request changes. | `chamoda/agent-foundry/nightwatch@v1` |
 
 Together they keep a project's momentum going: daydream surfaces *what* to do, lucid says *what it's worth*, nightwatch *does* it.
 
