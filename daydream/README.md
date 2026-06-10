@@ -8,7 +8,7 @@ daydream is the day-shift companion to [**nightwatch**](../nightwatch/README.md)
 
 Each run:
 
-1. **Reads existing issues** (open + recently closed) so it understands what already exists and never files duplicates.
+1. **Reads existing issues** (open + recently closed) so it understands what already exists and never files duplicates. Issues you **close as "not planned"** are treated as explicitly rejected: daydream keeps every not-planned issue it filed in context permanently and won't re-propose the idea or close variations of it — even if it's still listed in `VISION.md`.
 2. **Reads `VISION.md`** at your repo root — your maintainer's long-term vision. It prefers an idea from there that hasn't been turned into an issue yet, and **researches it in depth** before filing.
 3. **Falls back to a balanced split** when `VISION.md` is absent or fully explored: roughly half **new ideas**, half **maintenance / project-health** issues (tests, refactors, dependency upgrades, docs, CI, performance, security, tech debt). The ratio is configurable (`idea-ratio`, default `0.5`) and self-balances over time using label counts.
 

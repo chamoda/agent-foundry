@@ -4,8 +4,10 @@ Entry point for ``python -m daydream`` / the ``daydream`` console script.
 
 Each run:
 
-1. Gathers the repo's **existing issues** (open, plus recently closed titles) so
-   opencode knows what already exists and avoids duplicates.
+1. Gathers the repo's **existing issues** so opencode knows what already exists
+   and avoids duplicates: open issues, recently completed ones, and — kept
+   permanently in context — issues **closed as "not planned"**, which the
+   prompt treats as explicitly rejected ideas never to be re-proposed.
 2. Reads **VISION.md** at the consuming project's root, if present — the place
    maintainers record their long-term vision for new work. opencode prefers an
    idea from there that has not yet been turned into an issue, and researches it
@@ -85,25 +87,46 @@ class Settings:
 # --------------------------------------------------------------------------- #
 
 
-def existing_issues_context(repo: Repository) -> str:
+def snippet_line(issue, limit: int) -> str:
+    body = (issue.body or "").strip().replace("\r", "")
+    snippet = body[:limit] + ("…" if len(body) > limit else "")
+    return f"- #{issue.number} {issue.title}\n  {snippet}".rstrip()
+
+
+def existing_issues_context(repo: Repository, settings: Settings) -> str:
     open_lines: list[str] = []
     for issue in islice(repo.get_issues(state="open", sort="created", direction="desc"), 100):
         if issue.pull_request is not None:  # skip PRs
             continue
-        body = (issue.body or "").strip().replace("\r", "")
-        snippet = body[:400] + ("…" if len(body) > 400 else "")
-        open_lines.append(f"- #{issue.number} {issue.title}\n  {snippet}".rstrip())
+        open_lines.append(snippet_line(issue, 400))
 
-    closed_lines: list[str] = []
+    completed_lines: list[str] = []
+    rejected_lines: dict[int, str] = {}
     for issue in islice(repo.get_issues(state="closed", sort="updated", direction="desc"), 50):
         if issue.pull_request is not None:
             continue
-        closed_lines.append(f"- #{issue.number} {issue.title}")
+        if issue.state_reason == "not_planned":
+            rejected_lines[issue.number] = snippet_line(issue, 200)
+        else:
+            completed_lines.append(f"- #{issue.number} {issue.title}")
+
+    # Rejections are durable signal: always include every not-planned issue the
+    # agent itself filed, even ones that scrolled out of the recent-50 window.
+    for issue in repo.get_issues(state="closed", labels=[settings.base_label]):
+        if issue.pull_request is None and issue.state_reason == "not_planned":
+            rejected_lines.setdefault(issue.number, snippet_line(issue, 200))
 
     parts = ["## Existing OPEN issues (do not duplicate these)"]
     parts.append("\n".join(open_lines) if open_lines else "(none)")
-    parts.append("\n## Recently CLOSED issues (already addressed — do not re-file)")
-    parts.append("\n".join(closed_lines) if closed_lines else "(none)")
+    parts.append("\n## Recently CLOSED issues — completed (already done; do not re-file)")
+    parts.append("\n".join(completed_lines) if completed_lines else "(none)")
+    parts.append(
+        "\n## Issues closed as NOT PLANNED — the maintainer REJECTED these\n"
+        "Do not propose these again, and do not propose close variations of "
+        "the same idea. Treat the corresponding ideas as explicitly declined, "
+        "even if they appear in the maintainer vision file."
+    )
+    parts.append("\n".join(rejected_lines.values()) if rejected_lines else "(none)")
     return "\n".join(parts)
 
 
@@ -151,7 +174,7 @@ def build_prompt(repo: Repository, settings: Settings) -> str:
             f"You are a product-minded engineer and maintainer for the repository {settings.repo_name}.",
             "Your job is to propose ONE new, high-quality GitHub issue after deep research.",
             "",
-            existing_issues_context(repo),
+            existing_issues_context(repo, settings),
             "",
             ideas_section,
             "",
