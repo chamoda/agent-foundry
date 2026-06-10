@@ -1,0 +1,23 @@
+name: Daydream agent
+on:
+  schedule:
+    - cron: "0 12 * * *" # daily at noon UTC
+  workflow_dispatch:
+
+concurrency:
+  group: daydream-agent
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  daydream:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # daydream never pushes; keep the token out of .git/config.
+          persist-credentials: false
+      - uses: chamoda/agent-foundry/daydream@v1

@@ -1,0 +1,31 @@
+name: Lucid agent
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue number to score"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  lucid:
+    runs-on: ubuntu-24.04
+    # Public repo: only auto-score issues from trusted authors (prompt
+    # injection surface — see SECURITY.md). Outsider issues can be scored
+    # manually via workflow_dispatch after reading them.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
+               github.event.issue.author_association)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # lucid never pushes; keep the token out of .git/config.
+          persist-credentials: false
+      - uses: chamoda/agent-foundry/lucid@v1
