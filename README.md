@@ -1,6 +1,6 @@
 # 🛠️ agent-foundry
 
-> A monorepo of continuous AI agents for your GitHub repos, **powered by [opencode](https://opencode.ai)**. Each agent ships as a GitHub Action; they share a common core.
+> A monorepo of continuous AI agents for your GitHub repos, **powered by [opencode](https://opencode.ai)**. Each agent ships as a GitHub Action.
 
 | Agent | What it does | Use it as |
 |-------|--------------|-----------|
