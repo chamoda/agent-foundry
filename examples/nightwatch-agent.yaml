@@ -34,6 +34,3 @@ jobs:
         with:
           fetch-depth: 0
       - uses: chamoda/agent-foundry/nightwatch@v1
-        with:
-          github-token: ${{ secrets.NIGHTWATCH_GH_PAT || secrets.GITHUB_TOKEN }}
-          opencode-api-key: ${{ secrets.OPENCODE_API_KEY }}

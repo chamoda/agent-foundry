@@ -51,10 +51,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: chamoda/agent-foundry/daydream@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          opencode-api-key: ${{ secrets.OPENCODE_API_KEY }}
 ```
+
+That's the whole setup — `github-token` defaults to the workflow's `${{ github.token }}` and the default model is free, so no secrets are required.
 
 > **Note:** `schedule` only runs from the workflow on your **default branch**.
 

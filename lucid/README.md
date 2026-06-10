@@ -48,10 +48,6 @@ on:
         required: true
         type: string
 
-concurrency:
-  group: lucid-agent-${{ github.event.issue.number || github.event.inputs.issue }}
-  cancel-in-progress: false
-
 permissions:
   contents: read
   issues: write
@@ -62,10 +58,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: chamoda/agent-foundry/lucid@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          opencode-api-key: ${{ secrets.OPENCODE_API_KEY }}
 ```
+
+That's the whole setup — `github-token` defaults to the workflow's `${{ github.token }}` and the default model is free, so no secrets are required. Set `method: rice` under `with:` to use RICE instead of ICE.
 
 > **Note:** issues created by other workflows running with the default `GITHUB_TOKEN` (e.g. daydream) do **not** trigger `issues: opened` workflows — GitHub deliberately doesn't chain workflows off that token. To have lucid score daydream's issues automatically, give daydream a PAT as its `github-token`; otherwise score them manually via `workflow_dispatch`.
 

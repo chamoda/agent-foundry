@@ -21,12 +21,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: chamoda/agent-foundry/daydream@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          opencode-api-key: ${{ secrets.OPENCODE_API_KEY }}
 ```
 
-See each agent's README ([nightwatch](nightwatch/README.md), [daydream](daydream/README.md)) for inputs, required permissions, and details.
+No secrets needed: `github-token` defaults to the workflow's `${{ github.token }}` and the default model is the free OpenCode Zen `opencode/mimo-v2.5-free`. Add `opencode-api-key` only if you switch to a model that needs auth.
+
+See each agent's README ([nightwatch](nightwatch/README.md), [daydream](daydream/README.md), [lucid](lucid/README.md)) for inputs, required permissions, and details.
 
 ## Repo layout
 

@@ -54,9 +54,14 @@ jobs:
         with:
           fetch-depth: 0
       - uses: chamoda/agent-foundry/nightwatch@v1
+```
+
+That's the whole setup — `github-token` defaults to the workflow's `${{ github.token }}` and the default model is free, so no secrets are required. To get CI runs on the agent's PRs, pass a PAT instead (see the PAT note below):
+
+```yaml
+      - uses: chamoda/agent-foundry/nightwatch@v1
         with:
-          github-token: ${{ secrets.NIGHTWATCH_GH_PAT || secrets.GITHUB_TOKEN }}
-          opencode-api-key: ${{ secrets.OPENCODE_API_KEY }}
+          github-token: ${{ secrets.NIGHTWATCH_GH_PAT }}
 ```
 
 > **Note:** `schedule` only runs from the workflow on your **default branch**, so this must be merged to `main` to start firing.
