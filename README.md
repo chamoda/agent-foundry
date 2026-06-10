@@ -27,6 +27,12 @@ No secrets needed: `github-token` defaults to the workflow's `${{ github.token }
 
 See each agent's README ([nightwatch](nightwatch/README.md), [daydream](daydream/README.md), [lucid](lucid/README.md)) for inputs, required permissions, and details.
 
+## Security
+
+These agents run an LLM with shell access on inputs the public can write
+(issues, reviews). Read [SECURITY.md](SECURITY.md) — especially before
+enabling them on a public repo.
+
 ## Development
 
 Repo layout, local development, and the release process are documented in
