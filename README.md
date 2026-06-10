@@ -61,12 +61,8 @@ the `uses:` line:
 +      - uses: chamoda/agent-foundry/nightwatch@v1
 ```
 
-Changes from the standalone actions:
-
-- **daydream:** the deprecated `IDEAS.md` fallback and `IDEAS_FILE` env var are
-  gone. Name your vision file `VISION.md` (or set the `vision-file` input).
-
-All other inputs and defaults are unchanged.
+Inputs and defaults are unchanged. The maintainer vision file is `VISION.md`
+(configurable via daydream's `vision-file` input).
 
 ## Development
 

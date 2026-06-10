@@ -28,8 +28,6 @@ Internally, opencode runs in two phases — a read-only `plan` agent researches 
 
 daydream picks an unexplored entry, researches how it'd fit *this* codebase, and files a fleshed-out issue (problem, approach, affected files, acceptance criteria). Once every idea has a matching issue, it switches to the idea/maintenance fallback.
 
-> **Migrating from the standalone `chamoda/daydream-agent`:** its deprecated `IDEAS.md` fallback was removed here. Rename the file to `VISION.md` or point the `vision-file` input at it.
-
 ## Usage
 
 Add a workflow (see [`examples/daydream-agent.yaml`](../examples/daydream-agent.yaml)):
