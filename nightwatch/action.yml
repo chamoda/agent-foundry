@@ -1,0 +1,77 @@
+name: "nightwatch-agent"
+description: "Keeps watch over your repo: picks up open issues and proposes solutions as pull requests. Powered by opencode."
+author: "Chamoda Pandithage"
+branding:
+  icon: "moon"
+  color: "purple"
+
+inputs:
+  github-token:
+    description: "Token for the gh API (issues/PRs). Use a PAT if you want the agent's PRs to trigger other workflows (e.g. CI)."
+    required: true
+    default: ${{ github.token }}
+  opencode-api-key:
+    description: "OpenCode Zen API key, if the configured model requires auth."
+    required: false
+    default: ""
+  model:
+    description: "opencode model id (provider/model)."
+    required: false
+    default: "opencode/mimo-v2.5-free"
+  variant:
+    description: "Reasoning effort passed to `opencode run --variant` (high/max/minimal). Empty to disable."
+    required: false
+    default: "high"
+  plan:
+    description: "Plan first (read-only plan agent) then build. Set 'false' for a single build pass."
+    required: false
+    default: "true"
+  max-attempts:
+    description: "Give up on an issue after this many rejected PR attempts."
+    required: false
+    default: "3"
+  branch-prefix:
+    description: "Prefix for branches the agent pushes."
+    required: false
+    default: "nightwatch/issue-"
+  bot-name:
+    description: "Git author name for commits the agent makes."
+    required: false
+    default: "nightwatch-agent"
+  bot-email:
+    description: "Git author email for commits the agent makes."
+    required: false
+    default: "nightwatch-agent[bot]@users.noreply.github.com"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Install opencode
+      shell: bash
+      run: curl -fsSL https://opencode.ai/install | bash
+
+    - name: Run nightwatch-agent
+      shell: bash
+      env:
+        OPENCODE_MODEL: ${{ inputs.model }}
+        OPENCODE_VARIANT: ${{ inputs.variant }}
+        OPENCODE_PLAN: ${{ inputs.plan }}
+        MAX_ATTEMPTS: ${{ inputs.max-attempts }}
+        BRANCH_PREFIX: ${{ inputs.branch-prefix }}
+        BOT_NAME: ${{ inputs.bot-name }}
+        BOT_EMAIL: ${{ inputs.bot-email }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
+        # Event context (set by GitHub on the consumer's workflow run).
+        DISPATCH_ISSUE: ${{ github.event.inputs.issue }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+      run: |
+        export PATH="$HOME/.opencode/bin:$PATH"
+        # Run from the consumer's checked-out repo (cwd). $GITHUB_ACTION_PATH is
+        # this action's directory inside the monorepo; uv discovers the
+        # workspace root above it and uses the shared lockfile.
+        uv run --project "$GITHUB_ACTION_PATH" python -m nightwatch

@@ -1,0 +1,19 @@
+name: daydream-agent
+on:
+  schedule:
+    - cron: "0 12 * * *" # daily at noon UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  daydream:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chamoda/agent-foundry/daydream@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          opencode-api-key: ${{ secrets.OPENCODE_API_KEY }}

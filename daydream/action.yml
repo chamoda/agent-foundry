@@ -1,0 +1,83 @@
+name: "daydream-agent"
+description: "Researches your codebase and VISION.md, then files well-researched new issues. Powered by opencode."
+author: "Chamoda Pandithage"
+branding:
+  icon: "cloud"
+  color: "purple"
+
+inputs:
+  github-token:
+    description: "Token for the gh API (creates issues)."
+    required: true
+    default: ${{ github.token }}
+  opencode-api-key:
+    description: "OpenCode Zen API key, if the configured model requires auth."
+    required: false
+    default: ""
+  model:
+    description: "opencode model id (provider/model)."
+    required: false
+    default: "opencode/mimo-v2.5-free"
+  variant:
+    description: "Reasoning effort passed to `opencode run --variant` (high/max/minimal). Empty to disable."
+    required: false
+    default: "high"
+  plan:
+    description: "Research first (read-only plan agent) then write. Set 'false' for a single pass."
+    required: false
+    default: "true"
+  max-issues:
+    description: "Maximum number of issues to open per run."
+    required: false
+    default: "1"
+  idea-ratio:
+    description: "Target fraction of issues that are new ideas vs maintenance, used once VISION.md is exhausted (0.5 = 50/50)."
+    required: false
+    default: "0.5"
+  vision-file:
+    description: "Path (relative to repo root) of the maintainer vision file."
+    required: false
+    default: "VISION.md"
+  idea-label:
+    description: "Label applied to new-idea issues."
+    required: false
+    default: "daydream-idea"
+  maintenance-label:
+    description: "Label applied to maintenance / project-health issues."
+    required: false
+    default: "daydream-maintenance"
+  base-label:
+    description: "Label applied to every issue the agent files."
+    required: false
+    default: "daydream"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Install opencode
+      shell: bash
+      run: curl -fsSL https://opencode.ai/install | bash
+
+    - name: Run daydream-agent
+      shell: bash
+      env:
+        OPENCODE_MODEL: ${{ inputs.model }}
+        OPENCODE_VARIANT: ${{ inputs.variant }}
+        OPENCODE_PLAN: ${{ inputs.plan }}
+        MAX_ISSUES: ${{ inputs.max-issues }}
+        IDEA_RATIO: ${{ inputs.idea-ratio }}
+        VISION_FILE: ${{ inputs.vision-file }}
+        IDEA_LABEL: ${{ inputs.idea-label }}
+        MAINTENANCE_LABEL: ${{ inputs.maintenance-label }}
+        BASE_LABEL: ${{ inputs.base-label }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
+      run: |
+        export PATH="$HOME/.opencode/bin:$PATH"
+        # Run from the consumer's checked-out repo (cwd). $GITHUB_ACTION_PATH is
+        # this action's directory inside the monorepo; uv discovers the
+        # workspace root above it and uses the shared lockfile.
+        uv run --project "$GITHUB_ACTION_PATH" python -m daydream

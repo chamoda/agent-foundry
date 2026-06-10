@@ -1,0 +1,39 @@
+name: nightwatch-agent
+on:
+  schedule:
+    - cron: "0 0 * * *" # daily at midnight UTC
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue number (blank = auto-pick oldest)"
+        required: false
+        type: string
+  pull_request_review:
+    types: [submitted]
+
+concurrency:
+  group: nightwatch-agent
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  nightwatch:
+    runs-on: ubuntu-24.04
+    if: >
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request_review' &&
+       github.event.review.state == 'changes_requested' &&
+       startsWith(github.event.pull_request.head.ref, 'nightwatch/'))
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: chamoda/agent-foundry/nightwatch@v1
+        with:
+          github-token: ${{ secrets.NIGHTWATCH_GH_PAT || secrets.GITHUB_TOKEN }}
+          opencode-api-key: ${{ secrets.OPENCODE_API_KEY }}
