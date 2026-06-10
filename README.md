@@ -50,20 +50,6 @@ consumer's checked-out repo; uv discovers the workspace root and resolves
 > repository root, so the agents in this monorepo are not Marketplace-listed.
 > Referencing them by path (as above) works for every repo regardless.
 
-## Migrating from the standalone actions
-
-These agents previously lived in the standalone `chamoda/nightwatch-agent` and
-`chamoda/daydream-agent` repos (their tags keep working). To migrate, change
-the `uses:` line:
-
-```diff
--      - uses: chamoda/nightwatch-agent@v1
-+      - uses: chamoda/agent-foundry/nightwatch@v1
-```
-
-Inputs and defaults are unchanged. The maintainer vision file is `VISION.md`
-(configurable via daydream's `vision-file` input).
-
 ## Development
 
 ```bash
