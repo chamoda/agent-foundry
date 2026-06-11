@@ -66,11 +66,25 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 
 > **Note:** `schedule` only runs from the workflow on your **default branch**, so this must be merged to `main` to start firing.
 
+### Cross-repo issues
+
+If your project maintains issues in a separate repository, point nightwatch at it:
+
+```yaml
+      - uses: chamoda/agent-foundry/nightwatch@v1
+        with:
+          issues-repo: myorg/myproject-issues
+          github-token: ${{ secrets.NIGHTWATCH_GH_PAT }}
+```
+
+The token needs **read** access to the issues repo and **write** access to the code repo. PRs are always created in the repository where the workflow runs.
+
 ## Inputs
 
 | Input | Default | Description |
 |-------|---------|-------------|
 | `github-token` | `${{ github.token }}` | Token for the issues/PR API. See the PAT note below. |
+| `issues-repo` | `""` | Repository to fetch issues from (`owner/repo`). Defaults to the current repository. Use for projects with separate issue trackers. |
 | `opencode-api-key` | `""` | OpenCode Zen API key, only if the model requires auth. |
 | `model` | `opencode/mimo-v2.5-free` | opencode model id (`provider/model`). |
 | `variant` | `high` | Reasoning effort (`high`/`max`/`minimal`); empty disables. |

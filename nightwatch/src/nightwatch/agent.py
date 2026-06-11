@@ -22,7 +22,7 @@ Required env: ``GITHUB_REPOSITORY``, ``GITHUB_TOKEN``.
 Optional env: ``OPENCODE_MODEL``, ``OPENCODE_VARIANT`` (reasoning effort,
 default ``high``), ``OPENCODE_PLAN`` (default ``true``), ``MAX_ATTEMPTS``,
 ``BRANCH_PREFIX``, ``BOT_NAME``, ``BOT_EMAIL``, ``DISPATCH_ISSUE``,
-``PR_NUMBER``, ``PR_BRANCH``.
+``PR_NUMBER``, ``PR_BRANCH``, ``ISSUES_REPO``.
 """
 
 from __future__ import annotations
@@ -55,6 +55,7 @@ BUILD_LEAD_IN = "Now execute the plan you just produced."
 @dataclass(frozen=True)
 class Settings:
     repo_name: str
+    issues_repo: str
     token: str
     max_attempts: int
     branch_prefix: str
@@ -67,8 +68,10 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> Settings:
+        repo_name = env("GITHUB_REPOSITORY", required=True)
         return cls(
-            repo_name=env("GITHUB_REPOSITORY", required=True),
+            repo_name=repo_name,
+            issues_repo=env("ISSUES_REPO") or repo_name,
             token=env("GITHUB_TOKEN", required=True),
             max_attempts=env_int("MAX_ATTEMPTS", 3),
             branch_prefix=env("BRANCH_PREFIX", "nightwatch/issue-"),
@@ -142,7 +145,9 @@ def rejected_attempts_context(repo: Repository, issue_number: int) -> str:
 # --------------------------------------------------------------------------- #
 
 
-def select_issue(repo: Repository, settings: Settings) -> int | None:
+def select_issue(
+    repo: Repository, issues_repo: Repository, settings: Settings
+) -> int | None:
     if settings.dispatch_issue:
         return int(settings.dispatch_issue)
 
@@ -156,7 +161,7 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
             return True
         return any(references_issue(pr.body, number) for pr in open_prs)
 
-    for issue in repo.get_issues(state="open", sort="created", direction="asc"):
+    for issue in issues_repo.get_issues(state="open", sort="created", direction="asc"):
         if issue.pull_request is not None:  # the "issue" is actually a PR
             continue
         if has_open_pr(issue.number):
@@ -173,21 +178,31 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
     return None
 
 
-def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
-    issue_number = select_issue(repo, settings)
+def run_issue_mode(
+    repo: Repository, issues_repo: Repository, settings: Settings, opencode: Opencode
+) -> None:
+    issue_number = select_issue(repo, issues_repo, settings)
     if issue_number is None:
         log("No eligible open issue to work on. Nothing to do.")
         return
 
-    issue = repo.get_issue(issue_number)
+    issue = issues_repo.get_issue(issue_number)
     branch = settings.branch_for(issue_number)
     log(f"Working on issue #{issue_number}: {issue.title}")
+
+    issue_source = ""
+    if settings.issues_repo != settings.repo_name:
+        issue_source = (
+            f"\n>This issue originates from {settings.issues_repo}. "
+            f"Create PRs in {settings.repo_name}."
+        )
 
     context = "\n".join(
         [
             f"You are an autonomous software engineer working in the repository {settings.repo_name}.",
             "Your goal is a complete, working solution for the GitHub issue below.",
             "Follow the conventions in CLAUDE.md / AGENTS.md and match the existing code style.",
+            issue_source,
             "",
             f"# Issue #{issue_number}: {issue.title}",
             issue.body or "(no description)",
@@ -235,8 +250,12 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
     )
     run(["git", "push", "--force-with-lease", "origin", branch])
 
+    issue_ref = f"#{issue_number}"
+    if settings.issues_repo != settings.repo_name:
+        issue_ref = f"{settings.issues_repo}#{issue_number}"
+
     body = (
-        f"🌙 **Automated proposal by [nightwatch-agent](https://github.com/chamoda/agent-foundry)** for #{issue_number}.\n\n"
+        f"🌙 **Automated proposal by [nightwatch-agent](https://github.com/chamoda/agent-foundry)** for {issue_ref}.\n\n"
         "Generated while it kept watch. The agent was given the issue text, the issue "
         "discussion, and the reviewer feedback from any previously rejected attempts.\n\n"
         f"Closes #{issue_number}\n\n"
@@ -337,11 +356,14 @@ def main() -> None:
     run(["git", "config", "user.name", settings.bot_name])
     run(["git", "config", "user.email", settings.bot_email])
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
+    gh = Github(settings.token)
+    repo = gh.get_repo(settings.repo_name)
+    issues_repo = gh.get_repo(settings.issues_repo)
+
     if settings.event == "pull_request_review":
         run_revision_mode(repo, settings, opencode)
     else:
-        run_issue_mode(repo, settings, opencode)
+        run_issue_mode(repo, issues_repo, settings, opencode)
 
 
 if __name__ == "__main__":

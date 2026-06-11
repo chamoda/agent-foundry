@@ -10,6 +10,10 @@ inputs:
     description: "Token for the gh API (issues/PRs). Use a PAT if you want the agent's PRs to trigger other workflows (e.g. CI)."
     required: true
     default: ${{ github.token }}
+  issues-repo:
+    description: "Repository to fetch issues from (owner/repo). Defaults to the current repository. Use for projects with separate issue trackers."
+    required: false
+    default: ""
   opencode-api-key:
     description: "OpenCode Zen API key, if the configured model requires auth."
     required: false
@@ -65,6 +69,7 @@ runs:
         BOT_EMAIL: ${{ inputs.bot-email }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
+        ISSUES_REPO: ${{ inputs.issues-repo }}
         # Event context (set by GitHub on the consumer's workflow run).
         DISPATCH_ISSUE: ${{ github.event.inputs.issue }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
