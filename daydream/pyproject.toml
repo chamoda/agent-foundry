@@ -1,6 +1,6 @@
 [project]
 name = "daydream-agent"
-version = "1.2.0"
+version = "1.2.1"
 description = "Continuous AI agent that daydreams up new work: researches the codebase and a maintainer VISION.md, then files well-researched issues. Powered by opencode."
 requires-python = ">=3.12"
 dependencies = [

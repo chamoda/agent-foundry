@@ -204,7 +204,7 @@ wheels = [
 
 [[package]]
 name = "daydream-agent"
-version = "1.2.0"
+version = "1.2.1"
 source = { editable = "daydream" }
 dependencies = [
     { name = "foundry-core" },
@@ -219,7 +219,7 @@ requires-dist = [
 
 [[package]]
 name = "foundry-core"
-version = "1.1.0"
+version = "1.1.1"
 source = { editable = "core" }
 dependencies = [
     { name = "pygithub" },
@@ -239,7 +239,7 @@ wheels = [
 
 [[package]]
 name = "lucid-agent"
-version = "1.2.0"
+version = "1.2.1"
 source = { editable = "lucid" }
 dependencies = [
     { name = "foundry-core" },
@@ -254,7 +254,7 @@ requires-dist = [
 
 [[package]]
 name = "nightwatch-agent"
-version = "1.1.0"
+version = "1.1.1"
 source = { editable = "nightwatch" }
 dependencies = [
     { name = "foundry-core" },

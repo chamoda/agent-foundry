@@ -52,7 +52,7 @@ class Opencode:
     # Hard ceiling, in seconds, on a single opencode pass. opencode has no
     # reliable stuck-detection for a silently stalled stream, so this is what
     # actually frees a CI runner when a pass hangs. 0 disables.
-    timeout_s: int = 900
+    timeout_s: int = 1800
 
     @classmethod
     def from_env(cls) -> Opencode:
@@ -60,7 +60,7 @@ class Opencode:
             model=env("OPENCODE_MODEL", DEFAULT_MODEL),
             variant=env("OPENCODE_VARIANT", "high"),
             plan_first=env_bool("OPENCODE_PLAN", True),
-            timeout_s=env_int("OPENCODE_TIMEOUT", 900),
+            timeout_s=env_int("OPENCODE_TIMEOUT", 1800),
         )
 
     def run(
