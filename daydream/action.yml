@@ -26,6 +26,10 @@ inputs:
     description: "Research first (read-only plan agent) then write. Set 'false' for a single pass."
     required: false
     default: "true"
+  agent-timeout:
+    description: "Max seconds for a single opencode pass before it is killed (plan and build each get this). Guards against silent stalls. 0 disables."
+    required: false
+    default: "900"
   max-issues:
     description: "Maximum number of issues to open per run."
     required: false
@@ -67,6 +71,7 @@ runs:
         OPENCODE_MODEL: ${{ inputs.model }}
         OPENCODE_VARIANT: ${{ inputs.variant }}
         OPENCODE_PLAN: ${{ inputs.plan }}
+        OPENCODE_TIMEOUT: ${{ inputs.agent-timeout }}
         MAX_ISSUES: ${{ inputs.max-issues }}
         IDEA_RATIO: ${{ inputs.idea-ratio }}
         VISION_FILE: ${{ inputs.vision-file }}

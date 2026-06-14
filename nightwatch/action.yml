@@ -26,6 +26,10 @@ inputs:
     description: "Plan first (read-only plan agent) then build. Set 'false' for a single build pass."
     required: false
     default: "true"
+  agent-timeout:
+    description: "Max seconds for a single opencode pass before it is killed (plan and build each get this). Guards against silent stalls. 0 disables."
+    required: false
+    default: "900"
   max-attempts:
     description: "Give up on an issue after this many rejected PR attempts."
     required: false
@@ -59,6 +63,7 @@ runs:
         OPENCODE_MODEL: ${{ inputs.model }}
         OPENCODE_VARIANT: ${{ inputs.variant }}
         OPENCODE_PLAN: ${{ inputs.plan }}
+        OPENCODE_TIMEOUT: ${{ inputs.agent-timeout }}
         MAX_ATTEMPTS: ${{ inputs.max-attempts }}
         BRANCH_PREFIX: ${{ inputs.branch-prefix }}
         BOT_NAME: ${{ inputs.bot-name }}

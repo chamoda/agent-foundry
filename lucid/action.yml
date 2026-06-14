@@ -26,6 +26,10 @@ inputs:
     description: "Research first (read-only plan agent) then write. Set 'false' for a single pass."
     required: false
     default: "true"
+  agent-timeout:
+    description: "Max seconds for a single opencode pass before it is killed (plan and build each get this). Guards against silent stalls. 0 disables."
+    required: false
+    default: "900"
   method:
     description: "Scoring method: 'ice' (Impact × Confidence × Ease) or 'rice' ((Reach × Impact × Confidence) ÷ Effort)."
     required: false
@@ -51,6 +55,7 @@ runs:
         OPENCODE_MODEL: ${{ inputs.model }}
         OPENCODE_VARIANT: ${{ inputs.variant }}
         OPENCODE_PLAN: ${{ inputs.plan }}
+        OPENCODE_TIMEOUT: ${{ inputs.agent-timeout }}
         SCORE_METHOD: ${{ inputs.method }}
         VISION_FILE: ${{ inputs.vision-file }}
         GITHUB_TOKEN: ${{ inputs.github-token }}

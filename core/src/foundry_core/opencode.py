@@ -10,10 +10,12 @@ from __future__ import annotations
 import functools
 import json
 import os
+import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 
-from foundry_core.config import env, env_bool
+from foundry_core.config import env, env_bool, env_int
 from foundry_core.shell import log, run
 
 DEFAULT_MODEL = "opencode/mimo-v2.5-free"
@@ -47,6 +49,10 @@ class Opencode:
     variant: str = "high"
     # Plan first (read-only plan agent) then build, unless disabled.
     plan_first: bool = True
+    # Hard ceiling, in seconds, on a single opencode pass. opencode has no
+    # reliable stuck-detection for a silently stalled stream, so this is what
+    # actually frees a CI runner when a pass hangs. 0 disables.
+    timeout_s: int = 900
 
     @classmethod
     def from_env(cls) -> Opencode:
@@ -54,6 +60,7 @@ class Opencode:
             model=env("OPENCODE_MODEL", DEFAULT_MODEL),
             variant=env("OPENCODE_VARIANT", "high"),
             plan_first=env_bool("OPENCODE_PLAN", True),
+            timeout_s=env_int("OPENCODE_TIMEOUT", 900),
         )
 
     def run(
@@ -72,7 +79,14 @@ class Opencode:
             f"Running opencode (agent={agent or 'build'}, "
             f"variant={self.variant or 'default'}, prompt={len(prompt)} chars)…"
         )
-        run(cmd, env=opencode_env)
+        try:
+            run(cmd, env=opencode_env, timeout=self.timeout_s or None)
+        except subprocess.TimeoutExpired:
+            sys.exit(
+                f"opencode (agent={agent or 'build'}) exceeded its "
+                f"{self.timeout_s}s timeout and was killed — the pass stalled. "
+                "Raise OPENCODE_TIMEOUT if this was a legitimately long run."
+            )
 
     def plan_then_build(
         self,
