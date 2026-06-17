@@ -3,6 +3,13 @@
 Long-term directions for agent-foundry. daydream reads this file and turns
 unexplored entries into researched issues.
 
+> **Constraint:** Do not propose work that requires editing files under
+> `.github/workflows/`. nightwatch's `GITHUB_TOKEN` deliberately lacks the
+> `workflows` permission, so it cannot push such changes — see threat #3 in
+> [SECURITY.md](SECURITY.md). Any direction here must be implementable without
+> touching workflow files (e.g. via `core/`, agent packages, or composite
+> actions the workflows merely reference).
+
 - **Pluggable harnesses.** Run the agents on coding agents other than opencode
   (e.g. Claude Code) behind a small `Harness` protocol in `foundry-core`,
   selected via a `harness` action input. opencode stays the default; adding a
