@@ -28,6 +28,7 @@ default ``high``), ``OPENCODE_PLAN`` (default ``true``), ``MAX_ATTEMPTS``,
 from __future__ import annotations
 
 import itertools
+import subprocess
 from dataclasses import dataclass
 
 from github import Github
@@ -173,6 +174,54 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
     return None
 
 
+# GitHub refuses any push that creates or updates a file under
+# .github/workflows/ unless the token carries the `workflows` permission (App
+# token) or `workflow` scope (PAT). Both rejection messages contain this phrase.
+# Where the maintainer has granted it, the push just succeeds and this never
+# fires; it only triggers when the write is genuinely disallowed. See
+# SECURITY.md (threat #3) for why GITHUB_TOKEN is kept off workflow files.
+_WORKFLOW_PUSH_REJECTION = "create or update workflow"
+_BLOCKED_MARKER = "<!-- nightwatch:workflow-push-blocked -->"
+
+
+def try_push(branch: str, *, force: bool) -> bool:
+    """Push `branch` to origin. Return True on success, False if the push was
+    rejected solely because the token may not write under .github/workflows/.
+    Any other push failure is re-raised."""
+    cmd = ["git", "push"]
+    if force:
+        cmd.append("--force-with-lease")
+    cmd += ["origin", branch]
+    try:
+        run(cmd, capture_output=True, text=True)
+        return True
+    except subprocess.CalledProcessError as exc:
+        stderr = (exc.stderr or "").strip()
+        if stderr:
+            log(stderr)
+        if _WORKFLOW_PUSH_REJECTION in stderr:
+            return False
+        raise
+
+
+def workflow_blocked_comment() -> str:
+    return (
+        f"{_BLOCKED_MARKER}\n"
+        "🌙 nightwatch-agent built a solution but **could not push it**: the diff "
+        "changes files under `.github/workflows/`, and the token running this agent "
+        "is not allowed to write workflow files (GitHub blocks this unless the token "
+        "has the `workflows` permission — see SECURITY.md).\n\n"
+        "To let the agent handle changes like this, either grant `workflows: write` "
+        "in the agent's workflow `permissions:` block (trusted / private setups only), "
+        "or pass a PAT with the `workflow` scope as `github-token`. Otherwise this "
+        "needs a human-authored PR."
+    )
+
+
+def already_blocked(existing) -> bool:
+    return any(_BLOCKED_MARKER in (c.body or "") for c in existing)
+
+
 def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
     issue_number = select_issue(repo, settings)
     if issue_number is None:
@@ -233,7 +282,11 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
             ),
         ]
     )
-    run(["git", "push", "--force-with-lease", "origin", branch])
+    if not try_push(branch, force=True):
+        log(f"Issue #{issue_number} needs workflow-file changes this token can't push.")
+        if not already_blocked(issue.get_comments()):
+            issue.create_comment(workflow_blocked_comment())
+        return
 
     body = (
         f"🌙 **Automated proposal by [nightwatch-agent](https://github.com/chamoda/agent-foundry)** for #{issue_number}.\n\n"
@@ -320,7 +373,11 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
 
     run(["git", "add", "-A"])
     run(["git", "commit", "-m", f"nightwatch: address review feedback on #{pr_number}"])
-    run(["git", "push", "origin", branch])
+    if not try_push(branch, force=False):
+        log(f"PR #{pr_number} needs workflow-file changes this token can't push.")
+        if not already_blocked(pr.get_issue_comments()):
+            pr.create_issue_comment(workflow_blocked_comment())
+        return
     pr.create_issue_comment(
         "🌙 nightwatch-agent pushed changes addressing the latest review feedback. Please re-review."
     )
