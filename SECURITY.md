@@ -44,7 +44,16 @@ script.
 - **Mitigations:** branch protection on `main` (require PRs); a repository
   ruleset protecting release tags (`v*`). Note that `GITHUB_TOKEN` cannot
   modify `.github/workflows/` (it lacks the `workflows` scope), which closes
-  the worst self-modification loop.
+  the worst self-modification loop. nightwatch detects this specific push
+  rejection and exits cleanly with a comment rather than failing, so the
+  boundary holds without manual cleanup.
+
+  **Overriding the boundary (don't, on public repos):** granting
+  `workflows: write` in the agent's `permissions:` block, or passing a PAT with
+  the `workflow` scope as `github-token`, lets the agent push workflow files —
+  reopening exactly this self-modification loop. Only do this on private repos
+  or otherwise trusted setups; on a public repo an injected or steered agent
+  could then rewrite CI to run arbitrary code with your secrets.
 
 ### 4. Reviewed-but-malicious output (the social attack)
 
