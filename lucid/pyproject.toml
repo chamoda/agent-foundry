@@ -1,6 +1,6 @@
 [project]
 name = "lucid-agent"
-version = "1.2.1"
+version = "1.2.2"
 description = "Continuous AI agent that researches newly opened issues and posts an ICE/RICE priority score as a comment. Powered by opencode."
 requires-python = ">=3.12"
 dependencies = [

@@ -29,7 +29,7 @@ inputs:
   agent-timeout:
     description: "Max seconds for a single opencode pass before it is killed (plan and build each get this). Guards against silent stalls. 0 disables."
     required: false
-    default: "1800"
+    default: "3600"
   method:
     description: "Scoring method: 'ice' (Impact × Confidence × Ease) or 'rice' ((Reach × Impact × Confidence) ÷ Effort)."
     required: false

@@ -1,6 +1,6 @@
 [project]
 name = "foundry-core"
-version = "1.1.1"
+version = "1.1.2"
 description = "Shared core for agent-foundry agents: env config, shell helpers, the opencode driver, and GitHub utilities."
 requires-python = ">=3.12"
 dependencies = [
