@@ -50,12 +50,14 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install uv
-      uses: astral-sh/setup-uv@v4
-
-    - name: Install opencode
-      shell: bash
-      run: curl -fsSL https://opencode.ai/install | bash
+    - name: Shared setup (uv + opencode)
+      uses: ./.github/actions/setup
+      with:
+        github-token: ${{ inputs.github-token }}
+        opencode-api-key: ${{ inputs.opencode-api-key }}
+        model: ${{ inputs.model }}
+        variant: ${{ inputs.variant }}
+        plan: ${{ inputs.plan }}
 
     - name: Run nightwatch-agent
       shell: bash
@@ -75,7 +77,6 @@ runs:
         PR_NUMBER: ${{ github.event.pull_request.number }}
         PR_BRANCH: ${{ github.event.pull_request.head.ref }}
       run: |
-        export PATH="$HOME/.opencode/bin:$PATH"
         # Run from the consumer's checked-out repo (cwd). $GITHUB_ACTION_PATH is
         # this action's directory inside the monorepo; uv discovers the
         # workspace root above it and uses the shared lockfile.
