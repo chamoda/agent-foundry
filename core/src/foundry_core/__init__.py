@@ -10,7 +10,7 @@ from foundry_core.gh import ensure_label, references_issue
 from foundry_core.opencode import Opencode
 from foundry_core.shell import log, run, working_tree_dirty
 
-__version__ = "1.1.2"
+__version__ = "1.2.2"
 
 __all__ = [
     "Opencode",
