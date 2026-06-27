@@ -46,6 +46,10 @@ inputs:
     description: "Git author email for commits the agent makes."
     required: false
     default: "nightwatch-agent[bot]@users.noreply.github.com"
+  prefer-scored:
+    description: "Prefer issues with higher lucid scores (ice-N/rice-N labels)."
+    required: false
+    default: "true"
 
 runs:
   using: "composite"
@@ -68,6 +72,7 @@ runs:
         BRANCH_PREFIX: ${{ inputs.branch-prefix }}
         BOT_NAME: ${{ inputs.bot-name }}
         BOT_EMAIL: ${{ inputs.bot-email }}
+        PREFER_SCORED: ${{ inputs.prefer-scored }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
         # Event context (set by GitHub on the consumer's workflow run).

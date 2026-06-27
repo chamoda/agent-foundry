@@ -79,6 +79,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `branch-prefix` | `nightwatch/issue-` | Prefix for branches the agent pushes. |
 | `bot-name` | `nightwatch-agent` | Git commit author name. |
 | `bot-email` | `nightwatch-agent[bot]@users.noreply.github.com` | Git commit author email. |
+| `prefer-scored` | `true` | Prefer issues scored by lucid (`ice-N`/`rice-N` labels) over unscored issues. |
 
 ## Requirements & secrets
 
