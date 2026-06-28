@@ -37,7 +37,7 @@ from itertools import islice
 from github import Github
 from github.Repository import Repository
 
-from foundry_core import Opencode, ensure_label, env, env_float, env_int, log
+from foundry_core import Harness, ensure_label, env, env_float, env_int, get_harness, log
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the chosen issue here (in the consumer's checked-out repo).
@@ -252,8 +252,8 @@ def create_issue(repo: Repository, settings: Settings, data: dict) -> bool:
 # --------------------------------------------------------------------------- #
 
 
-def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> bool:
-    opencode.plan_then_build(
+def propose_one(repo: Repository, settings: Settings, harness: Harness) -> bool:
+    harness.plan_then_build(
         build_prompt(repo, settings),
         build_instructions(),
         plan_instructions=PLAN_INSTRUCTIONS,
@@ -267,12 +267,12 @@ def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> boo
 
 def main() -> None:
     settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    harness = get_harness()
 
     repo = Github(settings.token).get_repo(settings.repo_name)
     created = 0
     for _ in range(settings.max_issues):
-        if propose_one(repo, settings, opencode):  # counts/context recomputed each round to rebalance
+        if propose_one(repo, settings, harness):  # counts/context recomputed each round to rebalance
             created += 1
         else:
             log("Nothing to create this round; stopping.")

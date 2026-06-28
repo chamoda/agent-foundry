@@ -34,3 +34,5 @@ jobs:
         with:
           fetch-depth: 0
       - uses: chamoda/agent-foundry/nightwatch@v1
+        # with:
+        #   harness: opencode  # or "claude_code"

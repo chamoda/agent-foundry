@@ -10,6 +10,10 @@ inputs:
     description: "Token for the gh API (reads the issue, posts the score comment)."
     required: true
     default: ${{ github.token }}
+  harness:
+    description: "Coding agent harness to use: 'opencode' or 'claude_code'."
+    required: false
+    default: "opencode"
   opencode-api-key:
     description: "OpenCode Zen API key, if the configured model requires auth."
     required: false
@@ -38,6 +42,14 @@ inputs:
     description: "Path (relative to repo root) of the maintainer vision file, used to judge impact/alignment."
     required: false
     default: "VISION.md"
+  claude-model:
+    description: "Claude Code model id (only used when harness='claude_code')."
+    required: false
+    default: ""
+  claude-permission-mode:
+    description: "Claude Code permission mode (only used when harness='claude_code')."
+    required: false
+    default: "bypassPermissions"
 
 runs:
   using: "composite"
@@ -46,16 +58,25 @@ runs:
       uses: astral-sh/setup-uv@v4
 
     - name: Install opencode
+      if: inputs.harness == 'opencode'
       shell: bash
       run: curl -fsSL https://opencode.ai/install | bash
+
+    - name: Install Claude Code
+      if: inputs.harness == 'claude_code'
+      shell: bash
+      run: npm install -g @anthropic-ai/claude-code
 
     - name: Run lucid-agent
       shell: bash
       env:
+        HARNESS: ${{ inputs.harness }}
         OPENCODE_MODEL: ${{ inputs.model }}
         OPENCODE_VARIANT: ${{ inputs.variant }}
         OPENCODE_PLAN: ${{ inputs.plan }}
         OPENCODE_TIMEOUT: ${{ inputs.agent-timeout }}
+        CLAUDE_MODEL: ${{ inputs.claude-model }}
+        CLAUDE_PERMISSION_MODE: ${{ inputs.claude-permission-mode }}
         SCORE_METHOD: ${{ inputs.method }}
         VISION_FILE: ${{ inputs.vision-file }}
         GITHUB_TOKEN: ${{ inputs.github-token }}

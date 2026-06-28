@@ -10,6 +10,10 @@ inputs:
     description: "Token for the gh API (issues/PRs). Use a PAT if you want the agent's PRs to trigger other workflows (e.g. CI)."
     required: true
     default: ${{ github.token }}
+  harness:
+    description: "Coding agent harness to use: 'opencode' or 'claude_code'."
+    required: false
+    default: "opencode"
   opencode-api-key:
     description: "OpenCode Zen API key, if the configured model requires auth."
     required: false
@@ -46,6 +50,14 @@ inputs:
     description: "Git author email for commits the agent makes."
     required: false
     default: "nightwatch-agent[bot]@users.noreply.github.com"
+  claude-model:
+    description: "Claude Code model id (only used when harness='claude_code')."
+    required: false
+    default: ""
+  claude-permission-mode:
+    description: "Claude Code permission mode (only used when harness='claude_code')."
+    required: false
+    default: "bypassPermissions"
 
 runs:
   using: "composite"
@@ -54,16 +66,25 @@ runs:
       uses: astral-sh/setup-uv@v4
 
     - name: Install opencode
+      if: inputs.harness == 'opencode'
       shell: bash
       run: curl -fsSL https://opencode.ai/install | bash
+
+    - name: Install Claude Code
+      if: inputs.harness == 'claude_code'
+      shell: bash
+      run: npm install -g @anthropic-ai/claude-code
 
     - name: Run nightwatch-agent
       shell: bash
       env:
+        HARNESS: ${{ inputs.harness }}
         OPENCODE_MODEL: ${{ inputs.model }}
         OPENCODE_VARIANT: ${{ inputs.variant }}
         OPENCODE_PLAN: ${{ inputs.plan }}
         OPENCODE_TIMEOUT: ${{ inputs.agent-timeout }}
+        CLAUDE_MODEL: ${{ inputs.claude-model }}
+        CLAUDE_PERMISSION_MODE: ${{ inputs.claude-permission-mode }}
         MAX_ATTEMPTS: ${{ inputs.max-attempts }}
         BRANCH_PREFIX: ${{ inputs.branch-prefix }}
         BOT_NAME: ${{ inputs.bot-name }}

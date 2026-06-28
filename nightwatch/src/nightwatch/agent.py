@@ -36,9 +36,10 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from foundry_core import (
-    Opencode,
+    Harness,
     env,
     env_int,
+    get_harness,
     log,
     references_issue,
     run,
@@ -222,7 +223,7 @@ def already_blocked(existing) -> bool:
     return any(_BLOCKED_MARKER in (c.body or "") for c in existing)
 
 
-def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
+def run_issue_mode(repo: Repository, settings: Settings, harness: Harness) -> None:
     issue_number = select_issue(repo, settings)
     if issue_number is None:
         log("No eligible open issue to work on. Nothing to do.")
@@ -253,7 +254,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
             "in the working tree. The agent commits and opens the PR.",
         ]
     )
-    opencode.plan_then_build(
+    harness.plan_then_build(
         context,
         build_instructions,
         plan_instructions=PLAN_INSTRUCTIONS,
@@ -261,7 +262,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
     )
 
     if not working_tree_dirty():
-        log(f"opencode produced no changes for issue #{issue_number}.")
+        log(f"harness produced no changes for issue #{issue_number}.")
         issue.create_comment(
             "🌙 nightwatch-agent looked at this issue but did not produce any changes "
             "this run. It will retry on the next scheduled run."
@@ -311,7 +312,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
 # --------------------------------------------------------------------------- #
 
 
-def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
+def run_revision_mode(repo: Repository, settings: Settings, harness: Harness) -> None:
     if not settings.pr_number or not settings.pr_branch:
         raise SystemExit("Missing required env var: PR_NUMBER / PR_BRANCH")
     pr_number = int(settings.pr_number)
@@ -357,7 +358,7 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
             "Do NOT create commits or touch git — the agent commits and pushes.",
         ]
     )
-    opencode.plan_then_build(
+    harness.plan_then_build(
         context,
         build_instructions,
         plan_instructions=PLAN_INSTRUCTIONS,
@@ -365,7 +366,7 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
     )
 
     if not working_tree_dirty():
-        log(f"opencode produced no changes for PR #{pr_number}.")
+        log(f"harness produced no changes for PR #{pr_number}.")
         pr.create_issue_comment(
             "🌙 nightwatch-agent reviewed the feedback but did not produce any changes this run."
         )
@@ -389,16 +390,16 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
 
 def main() -> None:
     settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    harness = get_harness()
 
     run(["git", "config", "user.name", settings.bot_name])
     run(["git", "config", "user.email", settings.bot_email])
 
     repo = Github(settings.token).get_repo(settings.repo_name)
     if settings.event == "pull_request_review":
-        run_revision_mode(repo, settings, opencode)
+        run_revision_mode(repo, settings, harness)
     else:
-        run_issue_mode(repo, settings, opencode)
+        run_issue_mode(repo, settings, harness)
 
 
 if __name__ == "__main__":

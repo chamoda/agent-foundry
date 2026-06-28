@@ -16,6 +16,7 @@ import tempfile
 from dataclasses import dataclass
 
 from foundry_core.config import env, env_bool, env_int
+from foundry_core.harness import Harness
 from foundry_core.shell import log, run
 
 DEFAULT_MODEL = "opencode/mimo-v2.5-free"
@@ -40,7 +41,7 @@ def _config_path() -> str:
 
 
 @dataclass(frozen=True)
-class Opencode:
+class Opencode(Harness):
     """How to invoke opencode, read once from the environment."""
 
     model: str = DEFAULT_MODEL
