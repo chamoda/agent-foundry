@@ -1,7 +1,9 @@
 name: warden-agent
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    # `closed` fires when the PR is merged/closed: it joins the same per-PR
+    # concurrency group and cancels any in-flight review (the job is skipped).
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
     inputs:
       pr:
@@ -10,7 +12,8 @@ on:
         type: string
 
 concurrency:
-  # One review at a time per PR; let a newer push supersede an in-flight run.
+  # One review at a time per PR. A newer push supersedes an in-flight run, and
+  # merging/closing the PR cancels a running review.
   group: warden-agent-${{ github.event.pull_request.number || github.event.inputs.pr }}
   cancel-in-progress: true
 
@@ -21,6 +24,11 @@ permissions:
 jobs:
   warden:
     runs-on: ubuntu-24.04
+    # Skip the review when the PR is closed/merged — that run exists only to
+    # cancel an in-progress review via the concurrency group above.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed')
     steps:
       - uses: actions/checkout@v4
         with:

@@ -1,7 +1,9 @@
 name: Warden agent
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    # `closed` fires when the PR is merged/closed: it joins the same per-PR
+    # concurrency group and cancels any in-flight review (the job is skipped).
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
     inputs:
       pr:
@@ -10,7 +12,8 @@ on:
         type: string
 
 concurrency:
-  # One review at a time per PR; a newer push supersedes an in-flight run.
+  # One review at a time per PR. A newer push supersedes an in-flight run, and
+  # merging/closing the PR cancels a running review.
   group: warden-agent-${{ github.event.pull_request.number || github.event.inputs.pr }}
   cancel-in-progress: true
 
@@ -23,11 +26,14 @@ jobs:
     runs-on: ubuntu-24.04
     # Public repo: only auto-review PRs from trusted authors — a PR diff is a
     # prompt-injection surface (see SECURITY.md). Outsider PRs can be reviewed
-    # manually via workflow_dispatch after reading them.
+    # manually via workflow_dispatch after reading them. The `closed` event is
+    # skipped here — it only exists to cancel an in-flight review (above).
     if: >
       github.event_name == 'workflow_dispatch' ||
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
-               github.event.pull_request.author_association)
+      (github.event_name == 'pull_request' &&
+       github.event.action != 'closed' &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
+                github.event.pull_request.author_association))
     steps:
       - uses: actions/checkout@v4
         with:

@@ -44,7 +44,7 @@ Add a workflow (see [`examples/warden-agent.yaml`](../examples/warden-agent.yaml
 name: warden-agent
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
     inputs:
       pr:
@@ -63,6 +63,11 @@ permissions:
 jobs:
   warden:
     runs-on: ubuntu-24.04
+    # Skip the review on close/merge — that run only exists to cancel an
+    # in-flight review via the concurrency group above.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed')
     steps:
       - uses: actions/checkout@v4
         with:
@@ -71,6 +76,8 @@ jobs:
 ```
 
 That's the whole setup — `github-token` defaults to the workflow's `${{ github.token }}` and the default model is free, so no secrets are required.
+
+> **Cancel on merge:** the `closed` trigger plus the per-PR `concurrency` group mean that merging or closing a PR mid-review **cancels the in-flight run** — the `closed` event joins the same group (`cancel-in-progress: true`) and the job's `if` skips the actual review, so it just cancels.
 
 > **Note:** PRs opened by other workflows running with the default `GITHUB_TOKEN` (e.g. nightwatch) do **not** trigger `pull_request` workflows — GitHub deliberately doesn't chain workflows off that token. To have warden review nightwatch's PRs automatically, give nightwatch a PAT as its `github-token`; otherwise review them manually via `workflow_dispatch`.
 
