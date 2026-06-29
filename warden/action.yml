@@ -1,0 +1,81 @@
+name: "warden-agent"
+description: "Reviews pull requests quickly and posts inline comments, focused on security and matching existing code patterns. Powered by opencode."
+author: "Chamoda Pandithage"
+branding:
+  icon: "shield"
+  color: "purple"
+
+inputs:
+  github-token:
+    description: "Token for the gh API (reads the PR + diff, posts inline review comments)."
+    required: true
+    default: ${{ github.token }}
+  opencode-api-key:
+    description: "OpenCode Zen API key, if the configured model requires auth."
+    required: false
+    default: ""
+  model:
+    description: "opencode model id (provider/model)."
+    required: false
+    default: "opencode/mimo-v2.5-free"
+  variant:
+    description: "Reasoning effort passed to `opencode run --variant` (high/max/minimal). Empty to disable."
+    required: false
+    default: "high"
+  plan:
+    description: "Orient first (read-only plan agent) then write the review. Set 'false' for a single pass."
+    required: false
+    default: "true"
+  agent-timeout:
+    description: "Max seconds for a single opencode pass before it is killed (plan and build each get this). Guards against silent stalls. 0 disables."
+    required: false
+    default: "3600"
+  review-file:
+    description: "Path (relative to repo root) of the maintainer review-guidance file."
+    required: false
+    default: "REVIEW.md"
+  review-focus:
+    description: "Extra emphasis appended to the default focus (security + existing patterns) when no review-file is present."
+    required: false
+    default: ""
+  max-comments:
+    description: "Maximum number of inline comments warden will post per run."
+    required: false
+    default: "25"
+  feedback-pr-limit:
+    description: "How many recent PRs to scan for past warden suggestions that drew pushback (to avoid repeating their kind)."
+    required: false
+    default: "20"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Install opencode
+      shell: bash
+      run: curl -fsSL https://opencode.ai/install | bash
+
+    - name: Run warden-agent
+      shell: bash
+      env:
+        OPENCODE_MODEL: ${{ inputs.model }}
+        OPENCODE_VARIANT: ${{ inputs.variant }}
+        OPENCODE_PLAN: ${{ inputs.plan }}
+        OPENCODE_TIMEOUT: ${{ inputs.agent-timeout }}
+        REVIEW_FILE: ${{ inputs.review-file }}
+        REVIEW_FOCUS: ${{ inputs.review-focus }}
+        MAX_COMMENTS: ${{ inputs.max-comments }}
+        FEEDBACK_PR_LIMIT: ${{ inputs.feedback-pr-limit }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
+        # Event context (set by GitHub on the consumer's workflow run).
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        DISPATCH_PR: ${{ github.event.inputs.pr }}
+      run: |
+        export PATH="$HOME/.opencode/bin:$PATH"
+        # Run from the consumer's checked-out repo (cwd). $GITHUB_ACTION_PATH is
+        # this action's directory inside the monorepo; uv discovers the
+        # workspace root above it and uses the shared lockfile.
+        uv run --project "$GITHUB_ACTION_PATH" python -m warden

@@ -1,0 +1,38 @@
+name: Warden agent
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "PR number to review"
+        required: true
+        type: string
+
+concurrency:
+  # One review at a time per PR; a newer push supersedes an in-flight run.
+  group: warden-agent-${{ github.event.pull_request.number || github.event.inputs.pr }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  warden:
+    runs-on: ubuntu-24.04
+    # Public repo: only auto-review PRs from trusted authors — a PR diff is a
+    # prompt-injection surface (see SECURITY.md). Outsider PRs can be reviewed
+    # manually via workflow_dispatch after reading them.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
+               github.event.pull_request.author_association)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so re-reviews can diff only the new commits.
+          fetch-depth: 0
+          # warden never pushes; keep the token out of .git/config.
+          persist-credentials: false
+      - uses: chamoda/agent-foundry/warden@v1

@@ -7,8 +7,9 @@
 | 💭&nbsp;[**daydream**](daydream/) | Researches the codebase and your `VISION.md`, then files thoughtful, well-researched new issues. | `chamoda/agent-foundry/daydream@v1` |
 | 🔮&nbsp;[**lucid**](lucid/) | Triages each newly opened issue: researches it in depth, posts a 1–10 ICE/RICE priority score as a comment, and labels it `ice-7`. | `chamoda/agent-foundry/lucid@v1` |
 | 🌙&nbsp;[**nightwatch**](nightwatch/) | Picks up open issues and proposes solutions as pull requests, then revises them when reviewers request changes. | `chamoda/agent-foundry/nightwatch@v1` |
+| 🛡️&nbsp;[**warden**](warden/) | Reviews each pull request fast and posts inline comments — biased toward security and matching your existing patterns, re-reviewing only new commits on each push. | `chamoda/agent-foundry/warden@v1` |
 
-Together they keep a project's momentum going: daydream surfaces *what* to do, lucid says *what it's worth*, nightwatch *does* it.
+Together they keep a project's momentum going: daydream surfaces *what* to do, lucid says *what it's worth*, nightwatch *does* it, and warden *reviews* it.
 
 ## Quick start
 
@@ -25,7 +26,7 @@ jobs:
 
 No secrets needed: `github-token` defaults to the workflow's `${{ github.token }}` and the default model is the free OpenCode Zen `opencode/mimo-v2.5-free`. Add `opencode-api-key` only if you switch to a model that needs auth.
 
-See each agent's README ([nightwatch](nightwatch/README.md), [daydream](daydream/README.md), [lucid](lucid/README.md)) for inputs, required permissions, and details.
+See each agent's README ([nightwatch](nightwatch/README.md), [daydream](daydream/README.md), [lucid](lucid/README.md), [warden](warden/README.md)) for inputs, required permissions, and details.
 
 ## Security
 

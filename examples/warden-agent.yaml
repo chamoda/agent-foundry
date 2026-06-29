@@ -1,0 +1,28 @@
+name: warden-agent
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "PR number to review"
+        required: true
+        type: string
+
+concurrency:
+  # One review at a time per PR; let a newer push supersede an in-flight run.
+  group: warden-agent-${{ github.event.pull_request.number || github.event.inputs.pr }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  warden:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so re-reviews can diff only the new commits
+      - uses: chamoda/agent-foundry/warden@v1

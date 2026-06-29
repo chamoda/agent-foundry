@@ -1,2 +1,2 @@
 [tool.uv.workspace]
-members = ["core", "nightwatch", "daydream", "lucid"]
+members = ["core", "nightwatch", "daydream", "lucid", "warden"]
