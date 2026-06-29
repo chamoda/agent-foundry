@@ -311,6 +311,10 @@ def build_prompt(
                 "and security bugs first, then clear violations of the "
                 "project's existing conventions. Do not nitpick formatting a "
                 "linter would catch, and do not comment to praise.",
+                "If the changes look fine and you have nothing genuinely useful "
+                "to say, it is correct and encouraged to PASS the review with no "
+                "comments. Never invent comments just to have something to say — "
+                "an empty review is a perfectly good outcome.",
                 "",
                 f"# Pull request #{pr.number}: {pr.title}",
                 pr.body or "(no description)",
@@ -348,9 +352,10 @@ def build_instructions(settings: Settings) -> str:
             '      - "body": the review comment (markdown). Be specific and '
             "actionable; suggest the fix.",
             f"Include at most {settings.max_comments} comments — the most "
-            "important ones. Only comment on lines present in the diff you were "
-            "asked to review. Do NOT comment on the PR yourself and do NOT touch "
-            "git.",
+            "important ones, or an empty array if nothing is worth raising; do "
+            "not pad the review. Only comment on lines present in the diff you "
+            "were asked to review. Do NOT comment on the PR yourself and do NOT "
+            "touch git.",
         ]
     )
 

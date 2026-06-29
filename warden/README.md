@@ -10,7 +10,7 @@ When a pull request is opened or updated (or on manual dispatch):
 
 1. **Works out what to review.** warden keeps a hidden state marker on the PR recording the last commit it reviewed. The first run reviews the whole diff (`merge-base..head`); later runs review **only the new commits** (`last-reviewed..head`), so re-reviews after a push are cheap and fast.
 2. **Reads `REVIEW.md`** at your repo root (if present) for maintainer review guidance. Without it, warden falls back to two defaults: **security** and **consistency with the existing codebase**.
-3. **Reviews quickly** — it gets just enough context to understand the conventions and the subsystems the change touches, then reviews the diff. It is explicitly told *not* to audit the whole codebase or nitpick what a linter would catch.
+3. **Reviews quickly** — it gets just enough context to understand the conventions and the subsystems the change touches, then reviews the diff. It is explicitly told *not* to audit the whole codebase or nitpick what a linter would catch, and that it's fine to **pass with no comments** when the changes look good — it won't invent comments just to have something to say.
 4. **Doesn't repeat itself.** Its existing comments on the PR are fed back as *"already raised, do not repeat."* And past warden suggestions that drew a 👎 or a human reply — on this PR and recent ones — are fed back as *"this kind of suggestion was not wanted; don't make it again."*
 5. **Posts inline comments** on the exact lines as a single PR review, then updates the marker to the head commit. If any finding is **security** severity, warden submits the review as **Request changes** (a blocking review); otherwise it's a plain comment review.
 

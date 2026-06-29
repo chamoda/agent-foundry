@@ -1,6 +1,6 @@
 [project]
 name = "warden-agent"
-version = "1.0.0"
+version = "1.0.1"
 description = "Continuous AI agent that reviews pull requests quickly and posts inline review comments, focused on security and matching existing code patterns. Powered by opencode."
 requires-python = ">=3.12"
 dependencies = [
