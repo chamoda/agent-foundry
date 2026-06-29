@@ -5,7 +5,7 @@
 | Agent | What it does | Use it as |
 |-------|--------------|-----------|
 | 💭&nbsp;[**daydream**](daydream/) | Researches the codebase and your `VISION.md`, then files thoughtful, well-researched new issues. | `chamoda/agent-foundry/daydream@v1` |
-| 🔮&nbsp;[**lucid**](lucid/) | Triages each newly opened issue: researches it in depth, posts a 1–10 ICE/RICE priority score as a comment, and labels it `ice-7`. | `chamoda/agent-foundry/lucid@v1` |
+| 🔮&nbsp;[**lucid**](lucid/) ⚠️&nbsp;_deprecated_ | Triages each newly opened issue: researches it in depth, posts a 1–10 ICE/RICE priority score as a comment, and labels it `ice-7`. _No longer maintained; may be removed in `v2`._ | `chamoda/agent-foundry/lucid@v1` |
 | 🌙&nbsp;[**nightwatch**](nightwatch/) | Picks up open issues and proposes solutions as pull requests, then revises them when reviewers request changes. | `chamoda/agent-foundry/nightwatch@v1` |
 | 🛡️&nbsp;[**warden**](warden/) | Reviews each pull request fast and posts inline comments — biased toward security and matching your existing patterns, re-reviewing only new commits on each push. | `chamoda/agent-foundry/warden@v1` |
 

@@ -1,5 +1,10 @@
 # 🔮 lucid
 
+> [!WARNING]
+> **Deprecated.** lucid is no longer actively maintained and may be removed in a
+> future major release (`v2`). Existing users pinned to `@v1` can keep using it,
+> but new projects should not adopt it.
+
 > A continuous AI agent that **triages every new issue the moment it's filed**. It researches the issue against the actual codebase and your `VISION.md`, scores it **1–10** with **ICE** or **RICE**, posts a compact comment showing the math, and labels the issue `ice-7` / `rice-4`. **Powered by [opencode](https://opencode.ai).** Part of [agent-foundry](../README.md).
 
 lucid completes the loop with [**daydream**](../daydream/README.md) (which files new issues) and [**nightwatch**](../nightwatch/README.md) (which turns issues into PRs): daydream surfaces work, **lucid tells you what it's worth**, nightwatch does it.

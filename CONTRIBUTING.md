@@ -10,6 +10,7 @@ core/        foundry-core  — shared library (env config, shell helpers,
 nightwatch/  action.yml + nightwatch-agent package (depends on foundry-core)
 daydream/    action.yml + daydream-agent package  (depends on foundry-core)
 lucid/       action.yml + lucid-agent package     (depends on foundry-core)
+             [DEPRECATED — kept working on @v1, may be removed in v2]
 warden/      action.yml + warden-agent package    (depends on foundry-core)
 examples/    ready-to-copy consumer workflows
 ```

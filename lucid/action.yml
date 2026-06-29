@@ -1,5 +1,5 @@
 name: "lucid-agent"
-description: "Researches newly opened issues in depth and posts an ICE/RICE priority score as a comment. Powered by opencode."
+description: "[DEPRECATED — no longer maintained, may be removed in v2] Researches newly opened issues in depth and posts an ICE/RICE priority score as a comment. Powered by opencode."
 author: "Chamoda Pandithage"
 branding:
   icon: "eye"

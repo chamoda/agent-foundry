@@ -322,6 +322,11 @@ def apply_score_label(issue: Issue, method: str, score: int) -> None:
 
 
 def main() -> None:
+    log(
+        "⚠️ DEPRECATION: lucid-agent is deprecated and no longer actively "
+        "maintained. It still runs when pinned to @v1 but may be removed in a "
+        "future major release (v2)."
+    )
     settings = Settings.from_env()
     opencode = Opencode.from_env()
 
