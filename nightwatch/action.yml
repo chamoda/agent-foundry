@@ -46,6 +46,10 @@ inputs:
     description: "Git author email for commits the agent makes."
     required: false
     default: "nightwatch-agent[bot]@users.noreply.github.com"
+  issues-repo:
+    description: "Separate repository for issues (owner/repo format). Leave empty to use the same repo."
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -68,6 +72,7 @@ runs:
         BRANCH_PREFIX: ${{ inputs.branch-prefix }}
         BOT_NAME: ${{ inputs.bot-name }}
         BOT_EMAIL: ${{ inputs.bot-email }}
+        ISSUES_REPO: ${{ inputs.issues-repo }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
         # Event context (set by GitHub on the consumer's workflow run).

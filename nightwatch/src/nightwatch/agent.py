@@ -22,7 +22,7 @@ Required env: ``GITHUB_REPOSITORY``, ``GITHUB_TOKEN``.
 Optional env: ``OPENCODE_MODEL``, ``OPENCODE_VARIANT`` (reasoning effort,
 default ``high``), ``OPENCODE_PLAN`` (default ``true``), ``MAX_ATTEMPTS``,
 ``BRANCH_PREFIX``, ``BOT_NAME``, ``BOT_EMAIL``, ``DISPATCH_ISSUE``,
-``PR_NUMBER``, ``PR_BRANCH``.
+``PR_NUMBER``, ``PR_BRANCH``, ``ISSUES_REPO``.
 """
 
 from __future__ import annotations
@@ -65,6 +65,7 @@ class Settings:
     dispatch_issue: str
     pr_number: str
     pr_branch: str
+    issues_repo: str
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -81,6 +82,7 @@ class Settings:
             dispatch_issue=env("DISPATCH_ISSUE"),
             pr_number=env("PR_NUMBER"),
             pr_branch=env("PR_BRANCH"),
+            issues_repo=env("ISSUES_REPO"),
         )
 
     def branch_for(self, issue_number: int) -> str:
@@ -222,15 +224,24 @@ def already_blocked(existing) -> bool:
     return any(_BLOCKED_MARKER in (c.body or "") for c in existing)
 
 
-def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
-    issue_number = select_issue(repo, settings)
+def run_issue_mode(
+    repo: Repository,
+    issues_repo: Repository,
+    settings: Settings,
+    opencode: Opencode,
+) -> None:
+    issue_number = select_issue(issues_repo, settings)
     if issue_number is None:
         log("No eligible open issue to work on. Nothing to do.")
         return
 
-    issue = repo.get_issue(issue_number)
+    issue = issues_repo.get_issue(issue_number)
     branch = settings.branch_for(issue_number)
     log(f"Working on issue #{issue_number}: {issue.title}")
+
+    issue_ref = f"#{issue_number}"
+    if settings.issues_repo and settings.issues_repo != settings.repo_name:
+        issue_ref = f"{settings.issues_repo}#{issue_number}"
 
     context = "\n".join(
         [
@@ -289,10 +300,10 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
         return
 
     body = (
-        f"🌙 **Automated proposal by [nightwatch-agent](https://github.com/chamoda/agent-foundry)** for #{issue_number}.\n\n"
+        f"🌙 **Automated proposal by [nightwatch-agent](https://github.com/chamoda/agent-foundry)** for {issue_ref}.\n\n"
         "Generated while it kept watch. The agent was given the issue text, the issue "
         "discussion, and the reviewer feedback from any previously rejected attempts.\n\n"
-        f"Closes #{issue_number}\n\n"
+        f"Closes {issue_ref}\n\n"
         "> Reviewers: request changes via a PR review and the agent will automatically "
         "pick up your feedback and revise this branch.\n\n"
         "<sub>Powered by [opencode](https://opencode.ai).</sub>"
@@ -394,11 +405,17 @@ def main() -> None:
     run(["git", "config", "user.name", settings.bot_name])
     run(["git", "config", "user.email", settings.bot_email])
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
+    gh = Github(settings.token)
+    repo = gh.get_repo(settings.repo_name)
     if settings.event == "pull_request_review":
         run_revision_mode(repo, settings, opencode)
     else:
-        run_issue_mode(repo, settings, opencode)
+        issues_repo = (
+            gh.get_repo(settings.issues_repo)
+            if settings.issues_repo
+            else repo
+        )
+        run_issue_mode(repo, issues_repo, settings, opencode)
 
 
 if __name__ == "__main__":

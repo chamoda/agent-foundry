@@ -79,6 +79,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `branch-prefix` | `nightwatch/issue-` | Prefix for branches the agent pushes. |
 | `bot-name` | `nightwatch-agent` | Git commit author name. |
 | `bot-email` | `nightwatch-agent[bot]@users.noreply.github.com` | Git commit author email. |
+| `issues-repo` | `""` | Separate repository for issues (`owner/repo`). Empty = same repo. |
 
 ## Requirements & secrets
 
