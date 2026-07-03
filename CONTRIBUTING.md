@@ -43,10 +43,35 @@ repo-wide, so one release covers all agents.
 - `v1` — a **mutable** pointer force-moved to the newest `v1.x` on every
   release (this is how `actions/checkout@v4` works). Consumers pin `@v1`.
 
+### Version synchronization
+
+**All packages must declare the same version at all times.** Because tags are
+repo-wide (`v1.2.3`), every `pyproject.toml` `version` field and every
+`src/<pkg>/__init__.py` `__version__` string must match — there is no
+per-package versioning.
+
+To bump the version across every package:
+
+```bash
+# Replace X.Y.Z with the new version
+NEW="X.Y.Z"
+for pkg in core nightwatch daydream lucid warden; do
+  sed -i "s/^version = .*/version = \"$NEW\"/" "$pkg/pyproject.toml"
+  # foundry-core lives in core/ but the package dir is foundry_core
+  if [ "$pkg" = "core" ]; then init_pkg="foundry_core"; else init_pkg="$pkg"; fi
+  sed -i "s/^__version__ = .*/__version__ = \"$NEW\"/" "$pkg/src/$init_pkg/__init__.py"
+done
+uv lock
+```
+
+CI runs `scripts/check-versions.py` on every pull request.  The check fails
+if any package version drifts out of sync — fix the mismatch before merging.
+
 ### Cut a release
 
-1. Bump the version in each changed package's `pyproject.toml` and
-   `src/<pkg>/__init__.py` (keep them in sync), then `uv lock`.
+1. Bump **every** package's `pyproject.toml` `version` and
+   `src/<pkg>/__init__.py` `__version__` to the new version, then
+   `uv lock`.  (See the version synchronization section above.)
 2. Commit and push to `main`.
 3. Create the **immutable** tag:
    `gh release create v1.0.1 --target main --title v1.0.1 --notes "..."`.
