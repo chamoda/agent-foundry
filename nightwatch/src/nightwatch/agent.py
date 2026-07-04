@@ -38,7 +38,9 @@ from github.Repository import Repository
 from foundry_core import (
     Opencode,
     env,
+    env_bool,
     env_int,
+    get_score_from_labels,
     log,
     references_issue,
     run,
@@ -65,6 +67,7 @@ class Settings:
     dispatch_issue: str
     pr_number: str
     pr_branch: str
+    prefer_scored: bool
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -81,6 +84,7 @@ class Settings:
             dispatch_issue=env("DISPATCH_ISSUE"),
             pr_number=env("PR_NUMBER"),
             pr_branch=env("PR_BRANCH"),
+            prefer_scored=env_bool("PREFER_SCORED", True),
         )
 
     def branch_for(self, issue_number: int) -> str:
@@ -157,6 +161,7 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
             return True
         return any(references_issue(pr.body, number) for pr in open_prs)
 
+    eligible = []
     for issue in repo.get_issues(state="open", sort="created", direction="asc"):
         if issue.pull_request is not None:  # the "issue" is actually a PR
             continue
@@ -170,8 +175,17 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
                 f"(>= {settings.max_attempts}), skipping"
             )
             continue
-        return issue.number
-    return None
+        eligible.append(issue)
+
+    if not eligible:
+        return None
+
+    if settings.prefer_scored:
+        eligible.sort(
+            key=lambda i: (get_score_from_labels(i) or 0, -i.created_at.timestamp()),
+            reverse=True,
+        )
+    return eligible[0].number
 
 
 # GitHub refuses any push that creates or updates a file under
