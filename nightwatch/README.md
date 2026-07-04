@@ -8,7 +8,7 @@ Its companion, [**daydream**](../daydream/README.md), does the opposite shift �
 
 ## What it does
 
-- **Scheduled / manual run** → picks the oldest open issue with no active PR and opens a pull request that `Closes #<n>`.
+- **Scheduled / manual run** → picks the highest-scored open issue (by `ice-N`/`rice-N` labels from lucid, falling back to oldest-first) and opens a pull request that `Closes #<n>`.
 - **Reviewer requests changes** → automatically revises the PR branch to address the feedback and asks for re-review.
 - **Two-phase, high reasoning** → a read-only `plan` agent drafts an implementation plan, then a `build` agent executes it in the same session.
 - **Learns from rejections** → closed-unmerged PRs for the same issue (and their review comments) are included as "do not repeat these mistakes" context. After `max-attempts` rejections it leaves an issue alone.
@@ -79,6 +79,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `branch-prefix` | `nightwatch/issue-` | Prefix for branches the agent pushes. |
 | `bot-name` | `nightwatch-agent` | Git commit author name. |
 | `bot-email` | `nightwatch-agent[bot]@users.noreply.github.com` | Git commit author email. |
+| `prefer-scored` | `true` | Prefer issues with higher lucid scores (`ice-N`/`rice-N` labels) over oldest-first. |
 
 ## Requirements & secrets
 
