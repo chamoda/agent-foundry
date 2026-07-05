@@ -36,7 +36,8 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from foundry_core import (
-    Opencode,
+    Harness,
+    get_harness,
     env,
     env_int,
     log,
@@ -222,7 +223,7 @@ def already_blocked(existing) -> bool:
     return any(_BLOCKED_MARKER in (c.body or "") for c in existing)
 
 
-def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
+def run_issue_mode(repo: Repository, settings: Settings, harness: Harness) -> None:
     issue_number = select_issue(repo, settings)
     if issue_number is None:
         log("No eligible open issue to work on. Nothing to do.")
@@ -253,7 +254,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
             "in the working tree. The agent commits and opens the PR.",
         ]
     )
-    opencode.plan_then_build(
+    harness.plan_then_build(
         context,
         build_instructions,
         plan_instructions=PLAN_INSTRUCTIONS,
@@ -311,7 +312,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
 # --------------------------------------------------------------------------- #
 
 
-def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
+def run_revision_mode(repo: Repository, settings: Settings, harness: Harness) -> None:
     if not settings.pr_number or not settings.pr_branch:
         raise SystemExit("Missing required env var: PR_NUMBER / PR_BRANCH")
     pr_number = int(settings.pr_number)
@@ -357,7 +358,7 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
             "Do NOT create commits or touch git — the agent commits and pushes.",
         ]
     )
-    opencode.plan_then_build(
+    harness.plan_then_build(
         context,
         build_instructions,
         plan_instructions=PLAN_INSTRUCTIONS,
@@ -389,16 +390,16 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
 
 def main() -> None:
     settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    harness = get_harness()
 
     run(["git", "config", "user.name", settings.bot_name])
     run(["git", "config", "user.email", settings.bot_email])
 
     repo = Github(settings.token).get_repo(settings.repo_name)
     if settings.event == "pull_request_review":
-        run_revision_mode(repo, settings, opencode)
+        run_revision_mode(repo, settings, harness)
     else:
-        run_issue_mode(repo, settings, opencode)
+        run_issue_mode(repo, settings, harness)
 
 
 if __name__ == "__main__":

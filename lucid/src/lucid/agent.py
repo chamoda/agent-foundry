@@ -39,7 +39,13 @@ from dataclasses import dataclass
 from github import Github
 from github.Issue import Issue
 
-from foundry_core import Opencode, ensure_label, env, log
+from foundry_core import (
+    Harness,
+    ensure_label,
+    env,
+    get_harness,
+    log,
+)
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the score here (in the consumer's checked-out repo).
@@ -328,7 +334,7 @@ def main() -> None:
         "future major release (v2)."
     )
     settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    harness = get_harness()
 
     repo = Github(settings.token).get_repo(settings.repo_name)
     issue = repo.get_issue(settings.issue_number)
@@ -337,7 +343,7 @@ def main() -> None:
         return
     log(f"Scoring issue #{issue.number} ({settings.method.upper()}): {issue.title}")
 
-    opencode.plan_then_build(
+    harness.plan_then_build(
         build_prompt(issue, settings),
         build_instructions(settings.method),
         plan_instructions=PLAN_INSTRUCTIONS,
