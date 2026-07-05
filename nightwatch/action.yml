@@ -1,5 +1,5 @@
 name: "nightwatch-agent"
-description: "Keeps watch over your repo: picks up open issues and proposes solutions as pull requests. Powered by opencode."
+description: "Keeps watch over your repo: picks up open issues and proposes solutions as pull requests."
 author: "Chamoda Pandithage"
 branding:
   icon: "moon"
@@ -10,12 +10,16 @@ inputs:
     description: "Token for the gh API (issues/PRs). Use a PAT if you want the agent's PRs to trigger other workflows (e.g. CI)."
     required: true
     default: ${{ github.token }}
+  harness:
+    description: "Coding agent to use: 'opencode' or 'claude-code'."
+    required: false
+    default: "opencode"
   opencode-api-key:
     description: "OpenCode Zen API key, if the configured model requires auth."
     required: false
     default: ""
   model:
-    description: "opencode model id (provider/model)."
+    description: "Model id (provider/model for opencode, or claude model for claude-code)."
     required: false
     default: "opencode/mimo-v2.5-free"
   variant:
@@ -27,7 +31,7 @@ inputs:
     required: false
     default: "true"
   agent-timeout:
-    description: "Max seconds for a single opencode pass before it is killed (plan and build each get this). Guards against silent stalls. 0 disables."
+    description: "Max seconds for a single harness pass before it is killed (plan and build each get this). Guards against silent stalls. 0 disables."
     required: false
     default: "3600"
   max-attempts:
@@ -54,13 +58,21 @@ runs:
       uses: astral-sh/setup-uv@v4
 
     - name: Install opencode
+      if: inputs.harness == 'opencode'
       shell: bash
       run: curl -fsSL https://opencode.ai/install | bash
+
+    - name: Install Claude Code
+      if: inputs.harness == 'claude-code'
+      shell: bash
+      run: npm install -g @anthropic-ai/claude-code
 
     - name: Run nightwatch-agent
       shell: bash
       env:
+        HARNESS: ${{ inputs.harness }}
         OPENCODE_MODEL: ${{ inputs.model }}
+        CLAUDE_MODEL: ${{ inputs.model }}
         OPENCODE_VARIANT: ${{ inputs.variant }}
         OPENCODE_PLAN: ${{ inputs.plan }}
         OPENCODE_TIMEOUT: ${{ inputs.agent-timeout }}

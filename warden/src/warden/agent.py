@@ -47,7 +47,14 @@ from github import Github, GithubException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from foundry_core import Opencode, env, env_int, log, run
+from foundry_core import (
+    Harness,
+    env,
+    env_int,
+    get_harness,
+    log,
+    run,
+)
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the review here (in the consumer's checked-out repo).
@@ -470,7 +477,7 @@ def post_review(
 
 def main() -> None:
     settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    harness = get_harness()
 
     repo = Github(settings.token).get_repo(settings.repo_name)
     pr = repo.get_pull(settings.pr_number)
@@ -501,7 +508,7 @@ def main() -> None:
         f"{diff_range} ({len(files)} file(s))"
     )
 
-    opencode.plan_then_build(
+    harness.plan_then_build(
         build_prompt(pr, settings, diff_range, files, incremental),
         build_instructions(settings),
         plan_instructions=PLAN_INSTRUCTIONS,

@@ -14,3 +14,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: chamoda/agent-foundry/daydream@v1
+        with:
+          harness: "opencode" # or "claude-code"

@@ -34,3 +34,5 @@ jobs:
         with:
           fetch-depth: 0 # full history so re-reviews can diff only the new commits
       - uses: chamoda/agent-foundry/warden@v1
+        with:
+          harness: "opencode" # or "claude-code"
