@@ -28,9 +28,13 @@ jobs:
     # cancel an in-progress review via the concurrency group above.
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' && github.event.action != 'closed')
+      (github.event_name == 'pull_request' &&
+       github.event.action != 'closed' &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
+                github.event.pull_request.author_association))
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # full history so re-reviews can diff only the new commits
+          fetch-depth: 0
+          persist-credentials: false
       - uses: chamoda/agent-foundry/warden@v1
