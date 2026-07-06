@@ -4,6 +4,10 @@ on:
     - cron: "0 12 * * *" # daily at noon UTC
   workflow_dispatch:
 
+concurrency:
+  group: daydream-agent
+  cancel-in-progress: false
+
 permissions:
   contents: read
   issues: write
@@ -13,4 +17,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: chamoda/agent-foundry/daydream@v1

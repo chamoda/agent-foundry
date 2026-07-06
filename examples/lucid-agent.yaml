@@ -16,6 +16,12 @@ permissions:
 jobs:
   lucid:
     runs-on: ubuntu-24.04
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
+               github.event.issue.author_association)
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: chamoda/agent-foundry/lucid@v1

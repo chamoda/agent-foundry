@@ -93,8 +93,7 @@ but capped on public repos) and model credits (zero with the free model).
 3. **Branch protection on `main`** and a ruleset protecting `v*` tags.
 4. **`persist-credentials: false`** on the checkout step for daydream and
    lucid — they never push, so the token has no business in `.git/config`.
-5. Keep `concurrency` groups on the workflows (the examples include them where
-   it matters) so runs don't pile up.
+5. Keep `concurrency` groups on the workflows so runs don't pile up.
 
 On a **private repo** with trusted collaborators, the untrusted-input surface
 mostly disappears and the defaults are reasonable as-is.
