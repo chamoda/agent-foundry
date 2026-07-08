@@ -54,6 +54,10 @@ inputs:
     description: "Label applied to every issue the agent files."
     required: false
     default: "daydream"
+  opencode-version:
+    description: "opencode version to install (pinned for supply-chain safety). To bump: download the install script from https://opencode.ai/install, compute its sha256, and update both this version and the checksum below."
+    required: false
+    default: "1.17.15"
 
 runs:
   using: "composite"
@@ -63,7 +67,16 @@ runs:
 
     - name: Install opencode
       shell: bash
-      run: curl -fsSL https://opencode.ai/install | bash
+      env:
+        OPENCODE_VERSION: ${{ inputs.opencode-version }}
+      run: |
+        INSTALL_SCRIPT=$(mktemp)
+        trap 'rm -f "$INSTALL_SCRIPT"' EXIT
+        curl -fsSL -o "$INSTALL_SCRIPT" https://opencode.ai/install
+        # To bump: download the new script, run sha256sum on it, and replace the hash below.
+        EXPECTED_SHA256="fc3c1b2123f49b6df545a7622e5127d21cd794b15134fc3b66e1ca49f7fb297e"
+        echo "${EXPECTED_SHA256}  ${INSTALL_SCRIPT}" | sha256sum --check --strict
+        bash "$INSTALL_SCRIPT" --version "$OPENCODE_VERSION"
 
     - name: Run daydream-agent
       shell: bash

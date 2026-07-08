@@ -73,6 +73,20 @@ the agent's PRs is the only gate.
 Every opened issue triggers a lucid run; spam issues burn runner minutes (free
 but capped on public repos) and model credits (zero with the free model).
 
+### 6. Installer supply-chain attack
+
+The opencode install script is fetched from `https://opencode.ai/install` and
+executed on the runner. A compromised domain, CDN, or script would grant
+arbitrary code execution.
+
+Mitigations:
+- Each action pins a specific opencode version (`opencode-version` input,
+  default `1.17.15`).
+- The install script is downloaded to a temp file and its SHA-256 checksum is
+  verified before execution. Verification failure aborts the job.
+- The checksum is embedded in each `action.yml` with a comment explaining how
+  to recompute it when bumping versions.
+
 ## Recommended hardening for public repos
 
 1. **No `OPENCODE_API_KEY` secret** — use the free default model.
@@ -95,6 +109,8 @@ but capped on public repos) and model credits (zero with the free model).
    lucid — they never push, so the token has no business in `.git/config`.
 5. Keep `concurrency` groups on the workflows (the examples include them where
    it matters) so runs don't pile up.
+6. **Pin `opencode-version`** in your workflow to a known-good version and
+   verify the install script checksum (done automatically by the actions).
 
 On a **private repo** with trusted collaborators, the untrusted-input surface
 mostly disappears and the defaults are reasonable as-is.
