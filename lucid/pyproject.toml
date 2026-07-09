@@ -5,7 +5,6 @@ description = "[DEPRECATED] Continuous AI agent that researches newly opened iss
 requires-python = ">=3.12"
 dependencies = [
     "foundry-core",
-    "PyGithub>=2.3",
 ]
 
 [project.scripts]
