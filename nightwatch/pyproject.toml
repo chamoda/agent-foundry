@@ -5,7 +5,6 @@ description = "Continuous AI agent that keeps watch over your repo: picks up ope
 requires-python = ">=3.12"
 dependencies = [
     "foundry-core",
-    "PyGithub>=2.3",
 ]
 
 [project.scripts]
