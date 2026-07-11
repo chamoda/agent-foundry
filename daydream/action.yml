@@ -14,6 +14,10 @@ inputs:
     description: "OpenCode Zen API key, if the configured model requires auth."
     required: false
     default: ""
+  mcp-config:
+    description: "Path to a project MCP config (Claude Code `.mcp.json` format) whose servers are exposed to opencode. Empty to disable the passthrough."
+    required: false
+    default: ".mcp.json"
   model:
     description: "opencode model id (provider/model)."
     required: false
@@ -80,6 +84,7 @@ runs:
         BASE_LABEL: ${{ inputs.base-label }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
+        MCP_CONFIG: ${{ inputs.mcp-config }}
       run: |
         export PATH="$HOME/.opencode/bin:$PATH"
         # Run from the consumer's checked-out repo (cwd). $GITHUB_ACTION_PATH is

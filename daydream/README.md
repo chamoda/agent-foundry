@@ -61,6 +61,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 |-------|---------|-------------|
 | `github-token` | `${{ github.token }}` | Token used to create issues. |
 | `opencode-api-key` | `""` | OpenCode Zen API key, only if the model requires auth. |
+| `mcp-config` | `.mcp.json` | Project MCP config (Claude Code `.mcp.json` format) whose servers are exposed to opencode. Empty disables it. |
 | `model` | `opencode/mimo-v2.5-free` | opencode model id (`provider/model`). |
 | `variant` | `high` | Reasoning effort (`high`/`max`/`minimal`); empty disables. |
 | `plan` | `true` | Research (read-only) before writing. `false` = single pass. |
@@ -76,6 +77,10 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 - Checkout the repo before this action (it reads code + `VISION.md`).
 - **Permissions:** the job needs `contents: read` and `issues: write`.
 - **`OPENCODE_API_KEY`** *(optional)* — set it if your chosen model needs auth.
+
+## MCP tools
+
+If your repo has a `.mcp.json` (the same format Claude Code / Cursor use), its servers are translated into opencode's config and made available to the agent automatically — opencode does not read `.mcp.json` on its own. Point `mcp-config` at a different file, or set it empty to disable the passthrough. stdio servers (`command`/`args`/`env`) and remote servers (`url`/`headers`, `type: http`/`sse`) are both supported. The runner must have whatever the server needs to launch (e.g. Node/`npx` for an npm-published MCP).
 
 ## License
 

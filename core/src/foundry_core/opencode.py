@@ -20,19 +20,92 @@ from foundry_core.shell import log, run
 
 DEFAULT_MODEL = "opencode/mimo-v2.5-free"
 
+# A project's MCP servers live in `.mcp.json` (the convention Claude Code /
+# Cursor use). opencode does not read that file — it wants an `mcp` block in its
+# own config — so we translate it in and merge it below. Set MCP_CONFIG to point
+# at a different file, or to "" to disable the passthrough entirely.
+MCP_CONFIG_FILE = "MCP_CONFIG"
+DEFAULT_MCP_CONFIG = ".mcp.json"
+
+
+def _to_opencode_server(name: str, spec: dict) -> dict | None:
+    """Translate one `.mcp.json` server entry into opencode's `mcp` schema.
+
+    `.mcp.json` describes a stdio server as ``command``/``args``/``env`` and a
+    remote one as ``url``/``headers`` (``type`` "http"/"sse"). opencode wants a
+    ``local`` server (``command`` as one array, ``environment``) or a ``remote``
+    one (``url``, ``headers``). Returns None for an entry we can't translate.
+    """
+    if not isinstance(spec, dict):
+        log(f"MCP passthrough: skipping '{name}' — entry is not an object")
+        return None
+
+    url = spec.get("url")
+    if url or spec.get("type") in ("http", "sse", "remote"):
+        if not url:
+            log(f"MCP passthrough: skipping '{name}' — remote server has no url")
+            return None
+        server = {"type": "remote", "url": url, "enabled": True}
+        if spec.get("headers"):
+            server["headers"] = spec["headers"]
+        return server
+
+    command = spec.get("command")
+    if not command:
+        log(f"MCP passthrough: skipping '{name}' — no command or url")
+        return None
+    argv = [command, *spec.get("args", [])] if isinstance(command, str) else list(command)
+    server = {"type": "local", "command": argv, "enabled": True}
+    if spec.get("env"):
+        server["environment"] = spec["env"]
+    return server
+
+
+def _project_mcp() -> dict:
+    """Read the project's `.mcp.json` (if any) as an opencode `mcp` block.
+
+    Missing file → no MCP servers (returns ``{}``); malformed file → warn and
+    skip rather than crash the whole agent run.
+    """
+    path = env(MCP_CONFIG_FILE, DEFAULT_MCP_CONFIG)
+    if not path or not os.path.isfile(path):
+        return {}
+    try:
+        with open(path) as fh:
+            data = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        log(f"MCP passthrough: could not read {path} ({exc}); skipping")
+        return {}
+
+    servers = data.get("mcpServers") or data.get("mcp") or {}
+    out: dict = {}
+    for name, spec in servers.items():
+        translated = _to_opencode_server(name, spec)
+        if translated is not None:
+            out[name] = translated
+    if out:
+        log(f"MCP passthrough: loaded {len(out)} server(s) from {path}: "
+            f"{', '.join(sorted(out))}")
+    return out
+
 
 @functools.cache
 def _config_path() -> str:
     """Config so opencode runs fully non-interactively.
 
     The build agent may edit/bash/webfetch; the plan agent may explore (read,
-    bash) but never edit, so the planning pass stays read-only.
+    bash) but never edit, so the planning pass stays read-only. Any MCP servers
+    declared in the project's `.mcp.json` are translated in so the agent can
+    actually call them (opencode ignores `.mcp.json` on its own).
     """
     config = {
         "$schema": "https://opencode.ai/config.json",
         "permission": {"edit": "allow", "bash": "allow", "webfetch": "allow"},
         "agent": {"plan": {"permission": {"edit": "deny", "bash": "allow"}}},
     }
+    mcp = _project_mcp()
+    if mcp:
+        config["mcp"] = mcp
     fd, path = tempfile.mkstemp(suffix=".json")
     with os.fdopen(fd, "w") as fh:
         json.dump(config, fh)

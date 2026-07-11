@@ -72,6 +72,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 |-------|---------|-------------|
 | `github-token` | `${{ github.token }}` | Token for the issues/PR API. See the PAT note below. |
 | `opencode-api-key` | `""` | OpenCode Zen API key, only if the model requires auth. |
+| `mcp-config` | `.mcp.json` | Project MCP config (Claude Code `.mcp.json` format) whose servers are exposed to opencode. Empty disables it. |
 | `model` | `opencode/mimo-v2.5-free` | opencode model id (`provider/model`). |
 | `variant` | `high` | Reasoning effort (`high`/`max`/`minimal`); empty disables. |
 | `plan` | `true` | Plan (read-only) before building. `false` = single build pass. |
@@ -91,6 +92,10 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 ## How model auth works
 
 The default model is the free OpenCode Zen model `opencode/mimo-v2.5-free`. If a run fails with an auth error, create a key at [opencode.ai](https://opencode.ai) and set it as the `OPENCODE_API_KEY` secret — opencode picks it up automatically.
+
+## MCP tools
+
+If your repo has a `.mcp.json` (the same format Claude Code / Cursor use), its servers are translated into opencode's config and made available to the agent automatically — opencode does not read `.mcp.json` on its own. Point `mcp-config` at a different file, or set it empty to disable the passthrough. stdio servers (`command`/`args`/`env`) and remote servers (`url`/`headers`, `type: http`/`sse`) are both supported. The runner must have whatever the server needs to launch (e.g. Node/`npx` for an npm-published MCP).
 
 ## License
 

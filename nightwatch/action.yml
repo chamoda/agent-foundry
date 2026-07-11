@@ -14,6 +14,10 @@ inputs:
     description: "OpenCode Zen API key, if the configured model requires auth."
     required: false
     default: ""
+  mcp-config:
+    description: "Path to a project MCP config (Claude Code `.mcp.json` format) whose servers are exposed to opencode. Empty to disable the passthrough."
+    required: false
+    default: ".mcp.json"
   model:
     description: "opencode model id (provider/model)."
     required: false
@@ -70,6 +74,7 @@ runs:
         BOT_EMAIL: ${{ inputs.bot-email }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
+        MCP_CONFIG: ${{ inputs.mcp-config }}
         # Event context (set by GitHub on the consumer's workflow run).
         DISPATCH_ISSUE: ${{ github.event.inputs.issue }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
