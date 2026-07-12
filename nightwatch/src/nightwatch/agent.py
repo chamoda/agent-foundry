@@ -92,18 +92,17 @@ class Settings:
 # --------------------------------------------------------------------------- #
 
 
-def rejected_pulls(repo: Repository, issue_number: int) -> list[PullRequest]:
+def rejected_pulls(closed_prs: list[PullRequest], issue_number: int) -> list[PullRequest]:
     """Closed-but-not-merged PRs that referenced this issue."""
-    rejected: list[PullRequest] = []
-    closed = repo.get_pulls(state="closed", sort="created", direction="desc")
-    for pr in itertools.islice(closed, 100):
-        if pr.merged_at is None and references_issue(pr.body, issue_number):
-            rejected.append(pr)
-    return rejected
+    return [
+        pr
+        for pr in closed_prs
+        if pr.merged_at is None and references_issue(pr.body, issue_number)
+    ]
 
 
-def rejected_attempts_context(repo: Repository, issue_number: int) -> str:
-    rejected = rejected_pulls(repo, issue_number)
+def rejected_attempts_context(closed_prs: list[PullRequest], issue_number: int) -> str:
+    rejected = rejected_pulls(closed_prs, issue_number)
     if not rejected:
         return ""
 
@@ -150,6 +149,13 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
     open_prs = list(repo.get_pulls(state="open"))
     open_branches = {pr.head.ref for pr in open_prs}
 
+    closed_prs = list(
+        itertools.islice(
+            repo.get_pulls(state="closed", sort="created", direction="desc"),
+            100,
+        )
+    )
+
     def has_open_pr(number: int) -> bool:
         # Skip if we already own a branch for it, OR any open PR references the
         # issue (e.g. "Closes #<n>") regardless of its branch name.
@@ -163,7 +169,7 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
         if has_open_pr(issue.number):
             log(f"issue #{issue.number}: already has an open PR, skipping")
             continue
-        attempts = len(rejected_pulls(repo, issue.number))
+        attempts = len(rejected_pulls(closed_prs, issue.number))
         if attempts >= settings.max_attempts:
             log(
                 f"issue #{issue.number}: {attempts} rejected attempts "
@@ -232,6 +238,13 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
     branch = settings.branch_for(issue_number)
     log(f"Working on issue #{issue_number}: {issue.title}")
 
+    closed_prs = list(
+        itertools.islice(
+            repo.get_pulls(state="closed", sort="created", direction="desc"),
+            100,
+        )
+    )
+
     context = "\n".join(
         [
             f"You are an autonomous software engineer working in the repository {settings.repo_name}.",
@@ -243,7 +256,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
             "",
             "## Discussion on the issue",
             *[f"- {c.user.login}: {c.body}" for c in issue.get_comments()],
-            rejected_attempts_context(repo, issue_number),
+            rejected_attempts_context(closed_prs, issue_number),
         ]
     )
     build_instructions = "\n".join(
