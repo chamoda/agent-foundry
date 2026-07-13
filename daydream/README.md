@@ -65,6 +65,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `model` | `opencode/mimo-v2.5-free` | opencode model id (`provider/model`). |
 | `variant` | `high` | Reasoning effort (`high`/`max`/`minimal`); empty disables. |
 | `plan` | `true` | Research (read-only) before writing. `false` = single pass. |
+| `agent-timeout` | `3600` | Max seconds per opencode pass (plan and build each get this). `0` disables. |
 | `max-issues` | `1` | Max issues to open per run. |
 | `idea-ratio` | `0.5` | Target fraction of new-idea vs maintenance issues once `VISION.md` is exhausted. |
 | `vision-file` | `VISION.md` | Path to the maintainer vision file. |

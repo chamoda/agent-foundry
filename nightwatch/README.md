@@ -76,6 +76,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `model` | `opencode/mimo-v2.5-free` | opencode model id (`provider/model`). |
 | `variant` | `high` | Reasoning effort (`high`/`max`/`minimal`); empty disables. |
 | `plan` | `true` | Plan (read-only) before building. `false` = single build pass. |
+| `agent-timeout` | `3600` | Max seconds per opencode pass (plan and build each get this). `0` disables. |
 | `max-attempts` | `3` | Stop retrying an issue after this many rejected PRs. |
 | `branch-prefix` | `nightwatch/issue-` | Prefix for branches the agent pushes. |
 | `bot-name` | `nightwatch-agent` | Git commit author name. |

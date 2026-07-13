@@ -79,6 +79,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `model` | `opencode/mimo-v2.5-free` | opencode model id (`provider/model`). |
 | `variant` | `high` | Reasoning effort (`high`/`max`/`minimal`); empty disables. |
 | `plan` | `true` | Research (read-only) before scoring. `false` = single pass. |
+| `agent-timeout` | `3600` | Max seconds per opencode pass (plan and build each get this). `0` disables. |
 | `method` | `ice` | Scoring method: `ice` or `rice`. |
 | `vision-file` | `VISION.md` | Path to the maintainer vision file, used to judge impact/alignment. |
 
