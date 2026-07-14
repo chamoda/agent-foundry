@@ -20,16 +20,22 @@ def run(
     # With a timeout we run the child in its own process group so a hang takes
     # down the whole tree (e.g. opencode *and* anything it spawned), not just
     # the direct child that subprocess.run's own timeout would reach.
+    # Popen doesn't accept capture_output (a run()-only convenience);
+    # translate it to the equivalent stdout/stderr PIPE arguments.
+    capture = kwargs.pop("capture_output", False)
+    if capture:
+        kwargs.setdefault("stdout", subprocess.PIPE)
+        kwargs.setdefault("stderr", subprocess.PIPE)
     with subprocess.Popen(cmd, start_new_session=True, **kwargs) as proc:
         try:
-            proc.communicate(timeout=timeout)
+            stdout, stderr = proc.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
             os.killpg(proc.pid, signal.SIGKILL)
             proc.wait()
             raise
     if proc.returncode:
         raise subprocess.CalledProcessError(proc.returncode, cmd)
-    return subprocess.CompletedProcess(cmd, proc.returncode)
+    return subprocess.CompletedProcess(cmd, proc.returncode, stdout=stdout, stderr=stderr)
 
 
 def working_tree_dirty() -> bool:
