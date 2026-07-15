@@ -7,6 +7,7 @@ Only the wording of each pass differs per agent, so it is passed in.
 
 from __future__ import annotations
 
+import atexit
 import functools
 import json
 import os
@@ -109,6 +110,7 @@ def _config_path() -> str:
     fd, path = tempfile.mkstemp(suffix=".json")
     with os.fdopen(fd, "w") as fh:
         json.dump(config, fh)
+    atexit.register(os.remove, path)
     return path
 
 
