@@ -22,14 +22,14 @@ def run(
     # the direct child that subprocess.run's own timeout would reach.
     with subprocess.Popen(cmd, start_new_session=True, **kwargs) as proc:
         try:
-            proc.communicate(timeout=timeout)
+            stdout, stderr = proc.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
             os.killpg(proc.pid, signal.SIGKILL)
             proc.wait()
             raise
     if proc.returncode:
-        raise subprocess.CalledProcessError(proc.returncode, cmd)
-    return subprocess.CompletedProcess(cmd, proc.returncode)
+        raise subprocess.CalledProcessError(proc.returncode, cmd, output=stdout, stderr=stderr)
+    return subprocess.CompletedProcess(cmd, proc.returncode, stdout=stdout, stderr=stderr)
 
 
 def working_tree_dirty() -> bool:
