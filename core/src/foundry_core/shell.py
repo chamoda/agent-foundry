@@ -33,7 +33,7 @@ def run(
 
 
 def working_tree_dirty() -> bool:
-    out = subprocess.run(
+    out = run(
         ["git", "status", "--porcelain"], capture_output=True, text=True
     ).stdout
     return bool(out.strip())
