@@ -47,7 +47,7 @@ from github import Github, GithubException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from foundry_core import Opencode, env, env_int, log, run
+from foundry_core import ConfigError, Opencode, env, env_int, log, run
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the review here (in the consumer's checked-out repo).
@@ -469,8 +469,11 @@ def post_review(
 
 
 def main() -> None:
-    settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    try:
+        settings = Settings.from_env()
+        opencode = Opencode.from_env()
+    except ConfigError as exc:
+        sys.exit(str(exc))
 
     repo = Github(settings.token).get_repo(settings.repo_name)
     pr = repo.get_pull(settings.pr_number)

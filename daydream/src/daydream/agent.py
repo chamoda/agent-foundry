@@ -31,13 +31,14 @@ Optional env: ``OPENCODE_MODEL``, ``OPENCODE_VARIANT`` (default ``high``),
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from itertools import islice
 
 from github import Github
 from github.Repository import Repository
 
-from foundry_core import Opencode, ensure_label, env, env_float, env_int, log
+from foundry_core import ConfigError, Opencode, ensure_label, env, env_float, env_int, log
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the chosen issue here (in the consumer's checked-out repo).
@@ -266,8 +267,11 @@ def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> boo
 
 
 def main() -> None:
-    settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    try:
+        settings = Settings.from_env()
+        opencode = Opencode.from_env()
+    except ConfigError as exc:
+        sys.exit(str(exc))
 
     repo = Github(settings.token).get_repo(settings.repo_name)
     created = 0
