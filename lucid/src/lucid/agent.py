@@ -39,7 +39,7 @@ from dataclasses import dataclass
 from github import Github
 from github.Issue import Issue
 
-from foundry_core import Opencode, ensure_label, env, log
+from foundry_core import ConfigError, Opencode, ensure_label, env, log
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the score here (in the consumer's checked-out repo).
@@ -327,8 +327,11 @@ def main() -> None:
         "maintained. It still runs when pinned to @v1 but may be removed in a "
         "future major release (v2)."
     )
-    settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    try:
+        settings = Settings.from_env()
+        opencode = Opencode.from_env()
+    except ConfigError as exc:
+        sys.exit(str(exc))
 
     repo = Github(settings.token).get_repo(settings.repo_name)
     issue = repo.get_issue(settings.issue_number)

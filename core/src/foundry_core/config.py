@@ -7,13 +7,16 @@ so these are the only configuration primitives the agents need.
 from __future__ import annotations
 
 import os
-import sys
+
+
+class ConfigError(Exception):
+    """Raised when a required environment variable is missing."""
 
 
 def env(name: str, default: str | None = None, *, required: bool = False) -> str:
     value = os.environ.get(name, default)
     if required and not value:
-        sys.exit(f"Missing required env var: {name}")
+        raise ConfigError(f"Missing required env var: {name}")
     return value or ""
 
 

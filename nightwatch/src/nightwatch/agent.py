@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import itertools
 import subprocess
+import sys
 from dataclasses import dataclass
 
 from github import Github
@@ -36,6 +37,7 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from foundry_core import (
+    ConfigError,
     Opencode,
     env,
     env_int,
@@ -388,8 +390,11 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
 
 
 def main() -> None:
-    settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    try:
+        settings = Settings.from_env()
+        opencode = Opencode.from_env()
+    except ConfigError as exc:
+        sys.exit(str(exc))
 
     run(["git", "config", "user.name", settings.bot_name])
     run(["git", "config", "user.email", settings.bot_email])
