@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 
 from foundry_core.shell import log
 
@@ -23,11 +22,19 @@ def read_json_artifact(path: str) -> dict | None:
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", raw, re.DOTALL)  # tolerate stray fences/prose
-        if match:
-            try:
-                return json.loads(match.group(0))
-            except json.JSONDecodeError:
-                pass
+        start = raw.find("{")
+        while start >= 0:
+            depth = 0
+            for i, c in enumerate(raw[start:], start):
+                if c == "{":
+                    depth += 1
+                elif c == "}":
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            return json.loads(raw[start : i + 1])
+                        except json.JSONDecodeError:
+                            break
+            start = raw.find("{", start + 1)
     log(f"Could not parse {path} as JSON.")
     return None
