@@ -125,13 +125,13 @@ def rejected_attempts_context(repo: Repository, issue_number: int) -> str:
             lines.append("Reviews:")
             lines.extend(reviews)
         inline = [
-            f"- {c.path}:{c.line or c.original_line or '?'} — {c.body}"
+            f"- {c.path}:{c.line or c.original_line or '?'} — {c.body or '(none)'}"
             for c in pr.get_review_comments()
         ]
         if inline:
             lines.append("Inline review comments:")
             lines.extend(inline)
-        general = [f"- {c.user.login}: {c.body}" for c in pr.get_issue_comments()]
+        general = [f"- {c.user.login}: {c.body or '(none)'}" for c in pr.get_issue_comments()]
         if general:
             lines.append("General PR comments:")
             lines.extend(general)
@@ -242,7 +242,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
             issue.body or "(no description)",
             "",
             "## Discussion on the issue",
-            *[f"- {c.user.login}: {c.body}" for c in issue.get_comments()],
+            *[f"- {c.user.login}: {c.body or '(none)'}" for c in issue.get_comments()],
             rejected_attempts_context(repo, issue_number),
         ]
     )
@@ -343,12 +343,12 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
             "",
             "### Inline review comments",
             *[
-                f"- {c.path}:{c.line or c.original_line or '?'} — {c.body}"
+                f"- {c.path}:{c.line or c.original_line or '?'} — {c.body or '(none)'}"
                 for c in pr.get_review_comments()
             ],
             "",
             "### General PR comments",
-            *[f"- {c.user.login}: {c.body}" for c in pr.get_issue_comments()],
+            *[f"- {c.user.login}: {c.body or '(none)'}" for c in pr.get_issue_comments()],
         ]
     )
     build_instructions = "\n".join(
