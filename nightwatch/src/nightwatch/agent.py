@@ -269,7 +269,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
         return
 
     run(["git", "switch", "-C", branch])
-    run(["git", "add", "-A"])
+    run(["git", "add", "-u"])
     run(
         [
             "git",
@@ -371,7 +371,7 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
         )
         return
 
-    run(["git", "add", "-A"])
+    run(["git", "add", "-u"])
     run(["git", "commit", "-m", f"nightwatch: address review feedback on #{pr_number}"])
     if not try_push(branch, force=False):
         log(f"PR #{pr_number} needs workflow-file changes this token can't push.")
