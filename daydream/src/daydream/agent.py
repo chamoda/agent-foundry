@@ -35,6 +35,7 @@ from dataclasses import dataclass
 from itertools import islice
 
 from github import Github
+from github.Issue import Issue
 from github.Repository import Repository
 
 from foundry_core import Opencode, ensure_label, env, env_float, env_int, log
@@ -87,7 +88,7 @@ class Settings:
 # --------------------------------------------------------------------------- #
 
 
-def snippet_line(issue, limit: int) -> str:
+def snippet_line(issue: Issue, limit: int) -> str:
     body = (issue.body or "").strip().replace("\r", "")
     snippet = body[:limit] + ("…" if len(body) > limit else "")
     return f"- #{issue.number} {issue.title}\n  {snippet}".rstrip()
