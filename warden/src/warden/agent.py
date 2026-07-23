@@ -44,6 +44,7 @@ import sys
 from dataclasses import dataclass
 
 from github import Github, GithubException
+from github.IssueComment import IssueComment
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
@@ -146,21 +147,21 @@ def changed_files(diff_range: str) -> list[str]:
 # --------------------------------------------------------------------------- #
 
 
-def find_state_comment(pr: PullRequest):
+def find_state_comment(pr: PullRequest) -> IssueComment | None:
     for comment in pr.get_issue_comments():
         if STATE_MARKER in (comment.body or ""):
             return comment
     return None
 
 
-def reviewed_sha(state_comment) -> str | None:
+def reviewed_sha(state_comment: IssueComment | None) -> str | None:
     if state_comment is None:
         return None
     match = re.search(r"warden:sha=([0-9a-f]{7,40})", state_comment.body or "")
     return match.group(1) if match else None
 
 
-def upsert_state(pr: PullRequest, state_comment, head_sha: str, posted: int) -> None:
+def upsert_state(pr: PullRequest, state_comment: IssueComment | None, head_sha: str, posted: int) -> None:
     body = (
         f"{STATE_MARKER}\n"
         f"<!-- warden:sha={head_sha} -->\n"
@@ -374,8 +375,11 @@ def valid_comments(data: dict, settings: Settings) -> list[dict]:
         if not isinstance(item, dict):
             continue
         path = str(item.get("path") or "").strip()
+        raw_line = item.get("line")
+        if raw_line is None:
+            continue
         try:
-            line = int(item.get("line"))  # type: ignore[arg-type]
+            line = int(raw_line)
         except (TypeError, ValueError):
             continue
         body = str(item.get("body") or "").strip()

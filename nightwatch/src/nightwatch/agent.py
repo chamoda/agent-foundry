@@ -32,6 +32,8 @@ import subprocess
 from dataclasses import dataclass
 
 from github import Github
+from github.IssueComment import IssueComment
+from github.PaginatedList import PaginatedList
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
@@ -218,7 +220,7 @@ def workflow_blocked_comment() -> str:
     )
 
 
-def already_blocked(existing) -> bool:
+def already_blocked(existing: PaginatedList[IssueComment]) -> bool:
     return any(_BLOCKED_MARKER in (c.body or "") for c in existing)
 
 

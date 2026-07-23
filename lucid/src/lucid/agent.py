@@ -189,8 +189,12 @@ def fmt(value: float) -> str:
 
 
 def number(data: dict, key: str, lo: float, hi: float) -> float | None:
+    raw = data.get(key)
+    if raw is None:
+        log(f"Invalid or missing {key!r} in artifact.")
+        return None
     try:
-        value = float(data.get(key))  # type: ignore[arg-type]
+        value = float(raw)
     except (TypeError, ValueError):
         log(f"Invalid or missing {key!r} in artifact.")
         return None
