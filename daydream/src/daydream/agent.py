@@ -37,7 +37,7 @@ from itertools import islice
 from github import Github
 from github.Repository import Repository
 
-from foundry_core import Opencode, ensure_label, env, env_float, env_int, log
+from foundry_core import Opencode, REPO_URL, ensure_label, env, env_float, env_int, log
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the chosen issue here (in the consumer's checked-out repo).
@@ -241,7 +241,7 @@ def create_issue(repo: Repository, settings: Settings, data: dict) -> bool:
     ensure_label(repo, settings.base_label, LABEL_COLORS["base"])
     ensure_label(repo, category_label, LABEL_COLORS[category])
 
-    body += "\n\n<sub>💭 Filed by [daydream-agent](https://github.com/chamoda/agent-foundry), powered by [opencode](https://opencode.ai).</sub>"
+    body += f"\n\n<sub>💭 Filed by [daydream-agent]({REPO_URL}), powered by [opencode](https://opencode.ai).</sub>"
 
     issue = repo.create_issue(title=title, body=body)
     issue.set_labels(settings.base_label, category_label)

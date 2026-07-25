@@ -47,7 +47,7 @@ from github import Github, GithubException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from foundry_core import Opencode, env, env_int, log, run
+from foundry_core import Opencode, REPO_URL, env, env_int, log, run
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the review here (in the consumer's checked-out repo).
@@ -60,7 +60,7 @@ STATE_MARKER = "<!-- warden:state -->"
 
 SIGNATURE = (
     "\n<sub>🛡️ Reviewed by "
-    "[warden-agent](https://github.com/chamoda/agent-foundry), "
+    f"[warden-agent]({REPO_URL}), "
     "powered by [opencode](https://opencode.ai).</sub>"
 )
 
