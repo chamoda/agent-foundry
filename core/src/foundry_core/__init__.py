@@ -12,8 +12,11 @@ from foundry_core.shell import log, run, working_tree_dirty
 
 __version__ = "1.2.0"
 
+REPO_URL = "https://github.com/chamoda/agent-foundry"
+
 __all__ = [
     "Opencode",
+    "REPO_URL",
     "ensure_label",
     "env",
     "env_bool",

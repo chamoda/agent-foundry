@@ -39,7 +39,7 @@ from dataclasses import dataclass
 from github import Github
 from github.Issue import Issue
 
-from foundry_core import Opencode, ensure_label, env, log
+from foundry_core import Opencode, REPO_URL, ensure_label, env, log
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the score here (in the consumer's checked-out repo).
@@ -355,7 +355,7 @@ def main() -> None:
     score, comment = result
 
     comment += (
-        "\n<sub>🔮 Scored by [lucid-agent](https://github.com/chamoda/agent-foundry), "
+        f"\n<sub>🔮 Scored by [lucid-agent]({REPO_URL}), "
         "powered by [opencode](https://opencode.ai).</sub>"
     )
     issue.create_comment(comment)

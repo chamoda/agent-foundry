@@ -37,6 +37,7 @@ from github.Repository import Repository
 
 from foundry_core import (
     Opencode,
+    REPO_URL,
     env,
     env_int,
     log,
@@ -289,7 +290,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
         return
 
     body = (
-        f"🌙 **Automated proposal by [nightwatch-agent](https://github.com/chamoda/agent-foundry)** for #{issue_number}.\n\n"
+        f"🌙 **Automated proposal by [nightwatch-agent]({REPO_URL})** for #{issue_number}.\n\n"
         "Generated while it kept watch. The agent was given the issue text, the issue "
         "discussion, and the reviewer feedback from any previously rejected attempts.\n\n"
         f"Closes #{issue_number}\n\n"
