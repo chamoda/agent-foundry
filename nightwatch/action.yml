@@ -5,6 +5,14 @@ branding:
   icon: "moon"
   color: "purple"
 
+outputs:
+  issue-number:
+    description: "The issue number nightwatch worked on, or empty if none eligible"
+  pr-number:
+    description: "The pull request number created or updated, or empty if none"
+  pr-url:
+    description: "The HTML URL of the pull request, or empty if none"
+
 inputs:
   github-token:
     description: "Token for the gh API (issues/PRs). Use a PAT if you want the agent's PRs to trigger other workflows (e.g. CI)."

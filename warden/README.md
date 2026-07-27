@@ -96,6 +96,23 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `max-comments` | `25` | Maximum inline comments posted per run. |
 | `feedback-pr-limit` | `20` | Recent PRs scanned for past suggestions that drew pushback. |
 
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `review-event` | The review event: `COMMENT` or `REQUEST_CHANGES` |
+| `comments-posted` | Number of inline comments posted |
+| `head-sha` | The commit SHA that was reviewed |
+
+You can reference these outputs in subsequent workflow steps:
+
+```yaml
+- uses: chamoda/agent-foundry/warden@v1
+  id: warden
+- run: echo "Review event: ${{ steps.warden.outputs.review-event }}"
+- run: echo "Comments posted: ${{ steps.warden.outputs.comments-posted }}"
+```
+
 ## Requirements
 
 - Check out the repo **with `fetch-depth: 0`** before this action (it diffs commit ranges and reads `REVIEW.md`).

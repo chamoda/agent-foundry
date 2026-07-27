@@ -5,6 +5,14 @@ branding:
   icon: "shield"
   color: "purple"
 
+outputs:
+  review-event:
+    description: "The review event: COMMENT or REQUEST_CHANGES"
+  comments-posted:
+    description: "Number of inline comments posted"
+  head-sha:
+    description: "The commit SHA that was reviewed"
+
 inputs:
   github-token:
     description: "Token for the gh API (reads the PR + diff, posts inline review comments)."

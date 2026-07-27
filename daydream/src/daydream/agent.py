@@ -37,7 +37,7 @@ from itertools import islice
 from github import Github
 from github.Repository import Repository
 
-from foundry_core import Opencode, ensure_label, env, env_float, env_int, log
+from foundry_core import Opencode, ensure_label, env, env_float, env_int, log, set_output
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the chosen issue here (in the consumer's checked-out repo).
@@ -220,20 +220,21 @@ def build_instructions() -> str:
 # --------------------------------------------------------------------------- #
 
 
-def create_issue(repo: Repository, settings: Settings, data: dict) -> bool:
+def create_issue(repo: Repository, settings: Settings, data: dict) -> tuple[bool, str, str]:
+    """Create an issue.  Returns ``(created, issue_number, issue_url)``."""
     category = (data.get("category") or "").lower()
     if category == "none":
         log("opencode decided there is no worthwhile issue to create this run.")
-        return False
+        return (False, "", "")
     if category not in ("idea", "maintenance"):
         log(f"Skipping: unknown category {category!r}.")
-        return False
+        return (False, "", "")
 
     title = (data.get("title") or "").strip()
     body = (data.get("body") or "").strip()
     if not title or not body:
         log("Skipping: artifact missing title or body.")
-        return False
+        return (False, "", "")
 
     category_label = (
         settings.idea_label if category == "idea" else settings.maintenance_label
@@ -246,13 +247,14 @@ def create_issue(repo: Repository, settings: Settings, data: dict) -> bool:
     issue = repo.create_issue(title=title, body=body)
     issue.set_labels(settings.base_label, category_label)
     log(f"Opened {category} issue #{issue.number}: {issue.title} — {issue.html_url}")
-    return True
+    return (True, str(issue.number), issue.html_url)
 
 
 # --------------------------------------------------------------------------- #
 
 
-def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> bool:
+def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> tuple[bool, str, str]:
+    """Propose one issue.  Returns ``(created, issue_number, issue_url)``."""
     opencode.plan_then_build(
         build_prompt(repo, settings),
         build_instructions(),
@@ -261,7 +263,7 @@ def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> boo
     )
     data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
     if data is None:
-        return False
+        return (False, "", "")
     return create_issue(repo, settings, data)
 
 
@@ -270,14 +272,19 @@ def main() -> None:
     opencode = Opencode.from_env()
 
     repo = Github(settings.token).get_repo(settings.repo_name)
-    created = 0
+    last_issue_number = ""
+    last_issue_url = ""
     for _ in range(settings.max_issues):
-        if propose_one(repo, settings, opencode):  # counts/context recomputed each round to rebalance
-            created += 1
+        created, issue_number, issue_url = propose_one(repo, settings, opencode)
+        if created:
+            last_issue_number = issue_number
+            last_issue_url = issue_url
         else:
             log("Nothing to create this round; stopping.")
             break
-    log(f"daydream-agent created {created} issue(s).")
+    log(f"daydream-agent created {1 if last_issue_number else 0} issue(s).")
+    set_output("issue-number", last_issue_number)
+    set_output("issue-url", last_issue_url)
 
 
 if __name__ == "__main__":

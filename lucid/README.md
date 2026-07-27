@@ -82,6 +82,22 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `method` | `ice` | Scoring method: `ice` or `rice`. |
 | `vision-file` | `VISION.md` | Path to the maintainer vision file, used to judge impact/alignment. |
 
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `score` | The computed ICE/RICE score (1-10), or empty on failure |
+| `method` | The scoring method used (`ice` or `rice`) |
+
+You can reference these outputs in subsequent workflow steps:
+
+```yaml
+- uses: chamoda/agent-foundry/lucid@v1
+  id: lucid
+- run: echo "Score ${{ steps.lucid.outputs.score }}/10 via ${{ steps.lucid.outputs.method }}"
+  if: steps.lucid.outputs.score != ''
+```
+
 ## Requirements
 
 - Checkout the repo before this action (it reads code + `VISION.md`).

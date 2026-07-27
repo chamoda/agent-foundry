@@ -72,6 +72,22 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `maintenance-label` | `daydream-maintenance` | Label for maintenance issues. |
 | `base-label` | `daydream` | Label applied to every issue it files. |
 
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `issue-number` | The issue number created, or empty if none created |
+| `issue-url` | The HTML URL of the issue created, or empty if none created |
+
+You can reference these outputs in subsequent workflow steps:
+
+```yaml
+- uses: chamoda/agent-foundry/daydream@v1
+  id: daydream
+- run: echo "Created issue ${{ steps.daydream.outputs.issue-number }}"
+  if: steps.daydream.outputs.issue-number != ''
+```
+
 ## Requirements
 
 - Checkout the repo before this action (it reads code + `VISION.md`).

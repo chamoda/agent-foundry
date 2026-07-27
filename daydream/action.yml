@@ -5,6 +5,12 @@ branding:
   icon: "cloud"
   color: "purple"
 
+outputs:
+  issue-number:
+    description: "The issue number created, or empty if none created"
+  issue-url:
+    description: "The HTML URL of the issue created, or empty if none created"
+
 inputs:
   github-token:
     description: "Token for the gh API (creates issues)."

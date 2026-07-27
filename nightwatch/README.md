@@ -81,6 +81,23 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `bot-name` | `nightwatch-agent` | Git commit author name. |
 | `bot-email` | `nightwatch-agent[bot]@users.noreply.github.com` | Git commit author email. |
 
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `issue-number` | The issue number nightwatch worked on, or empty if none eligible |
+| `pr-number` | The pull request number created or updated, or empty if none |
+| `pr-url` | The HTML URL of the pull request, or empty if none |
+
+You can reference these outputs in subsequent workflow steps:
+
+```yaml
+- uses: chamoda/agent-foundry/nightwatch@v1
+  id: nightwatch
+- run: echo "PR ${{ steps.nightwatch.outputs.pr-number }} was opened"
+  if: steps.nightwatch.outputs.pr-number != ''
+```
+
 ## Requirements & secrets
 
 - **Checkout with `fetch-depth: 0`** before this action so it can fetch/switch PR branches.
