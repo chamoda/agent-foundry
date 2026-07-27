@@ -39,7 +39,7 @@ from dataclasses import dataclass
 from github import Github
 from github.Issue import Issue
 
-from foundry_core import Opencode, ensure_label, env, log
+from foundry_core import Opencode, ensure_label, env, log, set_output
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the score here (in the consumer's checked-out repo).
@@ -334,6 +334,8 @@ def main() -> None:
     issue = repo.get_issue(settings.issue_number)
     if issue.pull_request is not None:
         log(f"#{settings.issue_number} is a pull request; lucid only scores issues.")
+        set_output("score", "")
+        set_output("method", settings.method)
         return
     log(f"Scoring issue #{issue.number} ({settings.method.upper()}): {issue.title}")
 
@@ -346,11 +348,15 @@ def main() -> None:
 
     data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
     if data is None:
+        set_output("score", "")
+        set_output("method", settings.method)
         sys.exit("lucid: opencode did not produce a usable score artifact.")
 
     render = render_ice if settings.method == "ice" else render_rice
     result = render(data)
     if result is None:
+        set_output("score", "")
+        set_output("method", settings.method)
         sys.exit("lucid: score artifact failed validation; no comment posted.")
     score, comment = result
 
@@ -363,6 +369,8 @@ def main() -> None:
     log(
         f"Posted {settings.method.upper()} score {score}/10 on issue #{issue.number}."
     )
+    set_output("score", str(score))
+    set_output("method", settings.method)
 
 
 if __name__ == "__main__":

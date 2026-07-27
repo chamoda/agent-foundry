@@ -5,6 +5,12 @@ branding:
   icon: "eye"
   color: "purple"
 
+outputs:
+  score:
+    description: "The computed ICE/RICE score, or empty on failure"
+  method:
+    description: "The scoring method used (ice or rice)"
+
 inputs:
   github-token:
     description: "Token for the gh API (reads the issue, posts the score comment)."

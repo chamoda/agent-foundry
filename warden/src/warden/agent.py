@@ -47,7 +47,7 @@ from github import Github, GithubException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from foundry_core import Opencode, env, env_int, log, run
+from foundry_core import Opencode, env, env_int, log, run, set_output
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the review here (in the consumer's checked-out repo).
@@ -404,12 +404,14 @@ def post_review(
     head_sha: str,
     summary: str,
     comments: list[dict],
-) -> int:
+) -> tuple[int, str]:
     """Post inline comments as one review; fall back to individual comments.
 
     A ``security`` finding makes warden **request changes** (a blocking review);
     otherwise it leaves a plain ``COMMENT`` review. GitHub won't let a token
     request changes on its own PR, so the fallback degrades to a comment.
+
+    Returns ``(posted, event)`` where *event* is the review event used.
     """
     commit = repo.get_commit(head_sha)
     blocking = any(c.get("severity") == "security" for c in comments)
@@ -423,7 +425,7 @@ def post_review(
     body = (summary or "warden reviewed the latest changes.") + note + SIGNATURE
     if not comments:
         pr.create_review(commit=commit, body=body, event="COMMENT")
-        return 0
+        return (0, "COMMENT")
 
     review_comments = [
         {
@@ -438,7 +440,7 @@ def post_review(
         pr.create_review(
             commit=commit, body=body, event=event, comments=review_comments
         )
-        return len(review_comments)
+        return (len(review_comments), event)
     except GithubException as exc:
         log(f"Batched review failed ({exc}); posting comments individually.")
 
@@ -462,7 +464,7 @@ def post_review(
     except GithubException as exc:
         log(f"Could not submit {event} review ({exc}); posting summary comment.")
         pr.create_issue_comment(body)
-    return posted
+    return (posted, event)
 
 
 # --------------------------------------------------------------------------- #
@@ -476,6 +478,9 @@ def main() -> None:
     pr = repo.get_pull(settings.pr_number)
     if pr.state != "open":
         log(f"PR #{pr.number} is {pr.state}; warden only reviews open PRs.")
+        set_output("review-event", "")
+        set_output("comments-posted", "0")
+        set_output("head-sha", "")
         return
 
     head_sha = pr.head.sha
@@ -484,6 +489,9 @@ def main() -> None:
 
     if last_sha == head_sha:
         log(f"PR #{pr.number} already reviewed at {head_sha[:7]}; nothing to do.")
+        set_output("review-event", "")
+        set_output("comments-posted", "0")
+        set_output("head-sha", head_sha)
         return
 
     incremental = last_sha is not None
@@ -494,6 +502,9 @@ def main() -> None:
     if not files:
         log(f"No changed files in {diff_range}; updating state and stopping.")
         upsert_state(pr, state_comment, head_sha, 0)
+        set_output("review-event", "COMMENT")
+        set_output("comments-posted", "0")
+        set_output("head-sha", head_sha)
         return
 
     log(
@@ -510,13 +521,19 @@ def main() -> None:
 
     data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
     if data is None:
+        set_output("review-event", "")
+        set_output("comments-posted", "0")
+        set_output("head-sha", head_sha)
         sys.exit("warden: opencode did not produce a usable review artifact.")
 
     comments = valid_comments(data, settings)
     summary = " ".join(str(data.get("summary") or "").split())
-    posted = post_review(repo, pr, head_sha, summary, comments)
+    posted, event = post_review(repo, pr, head_sha, summary, comments)
     upsert_state(pr, state_comment, head_sha, posted)
     log(f"Posted {posted} inline comment(s) on PR #{pr.number}.")
+    set_output("review-event", event)
+    set_output("comments-posted", str(posted))
+    set_output("head-sha", head_sha)
 
 
 if __name__ == "__main__":
