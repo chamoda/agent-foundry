@@ -24,7 +24,10 @@ def run(
         try:
             proc.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
-            os.killpg(proc.pid, signal.SIGKILL)
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass  # process already exited
             proc.wait()
             raise
     if proc.returncode:
