@@ -37,6 +37,7 @@ from github.Repository import Repository
 
 from foundry_core import (
     Opencode,
+    ensure_label,
     env,
     env_int,
     log,
@@ -163,6 +164,9 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
         if has_open_pr(issue.number):
             log(f"issue #{issue.number}: already has an open PR, skipping")
             continue
+        if any(lbl.name == _BLOCKED_LABEL for lbl in issue.labels):
+            log(f"issue #{issue.number}: workflow-push-blocked, skipping")
+            continue
         attempts = len(rejected_pulls(repo, issue.number))
         if attempts >= settings.max_attempts:
             log(
@@ -182,6 +186,13 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
 # SECURITY.md (threat #3) for why GITHUB_TOKEN is kept off workflow files.
 _WORKFLOW_PUSH_REJECTION = "create or update workflow"
 _BLOCKED_MARKER = "<!-- nightwatch:workflow-push-blocked -->"
+_BLOCKED_LABEL = "nightwatch:blocked"
+
+
+def mark_blocked(repo: Repository, issue) -> None:
+    """Label the issue so ``select_issue()`` will skip it on future runs."""
+    ensure_label(repo, _BLOCKED_LABEL, color="d93f0b")
+    issue.add_to_labels(_BLOCKED_LABEL)
 
 
 def try_push(branch: str, *, force: bool) -> bool:
@@ -286,6 +297,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
         log(f"Issue #{issue_number} needs workflow-file changes this token can't push.")
         if not already_blocked(issue.get_comments()):
             issue.create_comment(workflow_blocked_comment())
+        mark_blocked(repo, issue)
         return
 
     body = (
@@ -377,6 +389,8 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
         log(f"PR #{pr_number} needs workflow-file changes this token can't push.")
         if not already_blocked(pr.get_issue_comments()):
             pr.create_issue_comment(workflow_blocked_comment())
+        ensure_label(repo, _BLOCKED_LABEL, color="d93f0b")
+        pr.add_to_labels(_BLOCKED_LABEL)
         return
     pr.create_issue_comment(
         "🌙 nightwatch-agent pushed changes addressing the latest review feedback. Please re-review."
