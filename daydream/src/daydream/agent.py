@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+import sys
 from itertools import islice
 
 from github import Github
@@ -266,18 +267,22 @@ def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> boo
 
 
 def main() -> None:
-    settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    try:
+        settings = Settings.from_env()
+        opencode = Opencode.from_env()
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
-    created = 0
-    for _ in range(settings.max_issues):
-        if propose_one(repo, settings, opencode):  # counts/context recomputed each round to rebalance
-            created += 1
-        else:
-            log("Nothing to create this round; stopping.")
-            break
-    log(f"daydream-agent created {created} issue(s).")
+        repo = Github(settings.token).get_repo(settings.repo_name)
+        created = 0
+        for _ in range(settings.max_issues):
+            if propose_one(repo, settings, opencode):  # counts/context recomputed each round to rebalance
+                created += 1
+            else:
+                log("Nothing to create this round; stopping.")
+                break
+        log(f"daydream-agent created {created} issue(s).")
+    except Exception as exc:
+        log(f"Fatal error: {exc}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
