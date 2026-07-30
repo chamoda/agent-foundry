@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import itertools
 import subprocess
+import sys
 from dataclasses import dataclass
 
 from github import Github
@@ -388,17 +389,21 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
 
 
 def main() -> None:
-    settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    try:
+        settings = Settings.from_env()
+        opencode = Opencode.from_env()
 
-    run(["git", "config", "user.name", settings.bot_name])
-    run(["git", "config", "user.email", settings.bot_email])
+        run(["git", "config", "user.name", settings.bot_name])
+        run(["git", "config", "user.email", settings.bot_email])
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
-    if settings.event == "pull_request_review":
-        run_revision_mode(repo, settings, opencode)
-    else:
-        run_issue_mode(repo, settings, opencode)
+        repo = Github(settings.token).get_repo(settings.repo_name)
+        if settings.event == "pull_request_review":
+            run_revision_mode(repo, settings, opencode)
+        else:
+            run_issue_mode(repo, settings, opencode)
+    except Exception as exc:
+        log(f"Fatal error: {exc}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
