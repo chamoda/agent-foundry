@@ -3,10 +3,28 @@ name = "daydream-agent"
 version = "1.2.3"
 description = "Continuous AI agent that daydreams up new work: researches the codebase and a maintainer VISION.md, then files well-researched issues. Powered by opencode."
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+authors = [
+    { name = "Chamoda Pandithage" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "foundry-core",
     "PyGithub>=2.3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/chamoda/agent-foundry"
+Repository = "https://github.com/chamoda/agent-foundry"
+"Bug Tracker" = "https://github.com/chamoda/agent-foundry/issues"
 
 [project.scripts]
 daydream = "daydream.agent:main"

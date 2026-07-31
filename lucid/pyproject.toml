@@ -3,10 +3,28 @@ name = "lucid-agent"
 version = "1.3.1"
 description = "[DEPRECATED] Continuous AI agent that researches newly opened issues and posts an ICE/RICE priority score as a comment. Powered by opencode."
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+authors = [
+    { name = "Chamoda Pandithage" }
+]
+classifiers = [
+    "Development Status :: 7 - Inactive",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "foundry-core",
     "PyGithub>=2.3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/chamoda/agent-foundry"
+Repository = "https://github.com/chamoda/agent-foundry"
+"Bug Tracker" = "https://github.com/chamoda/agent-foundry/issues"
 
 [project.scripts]
 lucid = "lucid.agent:main"
