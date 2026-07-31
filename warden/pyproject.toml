@@ -3,10 +3,28 @@ name = "warden-agent"
 version = "1.0.3"
 description = "Continuous AI agent that reviews pull requests quickly and posts inline review comments, focused on security and matching existing code patterns. Powered by opencode."
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+authors = [
+    { name = "Chamoda Pandithage" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "foundry-core",
     "PyGithub>=2.3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/chamoda/agent-foundry"
+Repository = "https://github.com/chamoda/agent-foundry"
+"Bug Tracker" = "https://github.com/chamoda/agent-foundry/issues"
 
 [project.scripts]
 warden = "warden.agent:main"
