@@ -42,6 +42,10 @@ inputs:
     description: "Path (relative to repo root) of the maintainer vision file, used to judge impact/alignment."
     required: false
     default: "VISION.md"
+  max-context-comments:
+    description: "Maximum number of recent comments to include in agent context per collection (sliding window)."
+    required: false
+    default: "50"
 
 runs:
   using: "composite"
@@ -62,6 +66,7 @@ runs:
         OPENCODE_TIMEOUT: ${{ inputs.agent-timeout }}
         SCORE_METHOD: ${{ inputs.method }}
         VISION_FILE: ${{ inputs.vision-file }}
+        MAX_CONTEXT_COMMENTS: ${{ inputs.max-context-comments }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
         MCP_CONFIG: ${{ inputs.mcp-config }}

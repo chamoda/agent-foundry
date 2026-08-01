@@ -21,8 +21,8 @@ straight to a single build pass.
 Required env: ``GITHUB_REPOSITORY``, ``GITHUB_TOKEN``.
 Optional env: ``OPENCODE_MODEL``, ``OPENCODE_VARIANT`` (reasoning effort,
 default ``high``), ``OPENCODE_PLAN`` (default ``true``), ``MAX_ATTEMPTS``,
-``BRANCH_PREFIX``, ``BOT_NAME``, ``BOT_EMAIL``, ``DISPATCH_ISSUE``,
-``PR_NUMBER``, ``PR_BRANCH``.
+``MAX_CONTEXT_COMMENTS`` (default ``50``), ``BRANCH_PREFIX``, ``BOT_NAME``,
+``BOT_EMAIL``, ``DISPATCH_ISSUE``, ``PR_NUMBER``, ``PR_BRANCH``.
 """
 
 from __future__ import annotations
@@ -53,11 +53,17 @@ PLAN_INSTRUCTIONS = (
 BUILD_LEAD_IN = "Now execute the plan you just produced."
 
 
+def _last_n(collection, n: int):
+    """Return at most the last *n* items (sliding window, newest-first)."""
+    return list(collection)[-n:]
+
+
 @dataclass(frozen=True)
 class Settings:
     repo_name: str
     token: str
     max_attempts: int
+    max_context_comments: int
     branch_prefix: str
     bot_name: str
     bot_email: str
@@ -72,6 +78,7 @@ class Settings:
             repo_name=env("GITHUB_REPOSITORY", required=True),
             token=env("GITHUB_TOKEN", required=True),
             max_attempts=env_int("MAX_ATTEMPTS", 3),
+            max_context_comments=env_int("MAX_CONTEXT_COMMENTS", 50),
             branch_prefix=env("BRANCH_PREFIX", "nightwatch/issue-"),
             bot_name=env("BOT_NAME", "nightwatch-agent"),
             bot_email=env(
@@ -102,7 +109,9 @@ def rejected_pulls(repo: Repository, issue_number: int) -> list[PullRequest]:
     return rejected
 
 
-def rejected_attempts_context(repo: Repository, issue_number: int) -> str:
+def rejected_attempts_context(
+    repo: Repository, issue_number: int, settings: Settings
+) -> str:
     rejected = rejected_pulls(repo, issue_number)
     if not rejected:
         return ""
@@ -114,24 +123,28 @@ def rejected_attempts_context(repo: Repository, issue_number: int) -> str:
         "without merging. Read the reviewer feedback and do NOT repeat the same "
         "mistakes — take a corrected or different approach.",
     ]
+    n = settings.max_context_comments
     for pr in rejected:
         lines.append(f"\n### Rejected PR #{pr.number}: {pr.title}")
         lines.append(f"Author's summary: {pr.body or '(none)'}")
         reviews = [
             f"- [{r.state}] {r.user.login}: {r.body or '(no text)'}"
-            for r in pr.get_reviews()
+            for r in _last_n(pr.get_reviews(), n)
         ]
         if reviews:
             lines.append("Reviews:")
             lines.extend(reviews)
         inline = [
             f"- {c.path}:{c.line or c.original_line or '?'} — {c.body}"
-            for c in pr.get_review_comments()
+            for c in _last_n(pr.get_review_comments(), n)
         ]
         if inline:
             lines.append("Inline review comments:")
             lines.extend(inline)
-        general = [f"- {c.user.login}: {c.body}" for c in pr.get_issue_comments()]
+        general = [
+            f"- {c.user.login}: {c.body}"
+            for c in _last_n(pr.get_issue_comments(), n)
+        ]
         if general:
             lines.append("General PR comments:")
             lines.extend(general)
@@ -242,8 +255,11 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
             issue.body or "(no description)",
             "",
             "## Discussion on the issue",
-            *[f"- {c.user.login}: {c.body}" for c in issue.get_comments()],
-            rejected_attempts_context(repo, issue_number),
+            *[
+                f"- {c.user.login}: {c.body}"
+                for c in _last_n(issue.get_comments(), settings.max_context_comments)
+            ],
+            rejected_attempts_context(repo, issue_number, settings),
         ]
     )
     build_instructions = "\n".join(
@@ -325,7 +341,7 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
 
     def review_summaries() -> list[str]:
         out = []
-        for r in pr.get_reviews():
+        for r in _last_n(pr.get_reviews(), settings.max_context_comments):
             if r.state in ("CHANGES_REQUESTED", "COMMENTED") and r.body:
                 out.append(f"- {r.user.login}: {r.body}")
         return out
@@ -344,11 +360,18 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
             "### Inline review comments",
             *[
                 f"- {c.path}:{c.line or c.original_line or '?'} — {c.body}"
-                for c in pr.get_review_comments()
+                for c in _last_n(
+                    pr.get_review_comments(), settings.max_context_comments
+                )
             ],
             "",
             "### General PR comments",
-            *[f"- {c.user.login}: {c.body}" for c in pr.get_issue_comments()],
+            *[
+                f"- {c.user.login}: {c.body}"
+                for c in _last_n(
+                    pr.get_issue_comments(), settings.max_context_comments
+                )
+            ],
         ]
     )
     build_instructions = "\n".join(

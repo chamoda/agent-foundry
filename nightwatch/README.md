@@ -80,6 +80,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `branch-prefix` | `nightwatch/issue-` | Prefix for branches the agent pushes. |
 | `bot-name` | `nightwatch-agent` | Git commit author name. |
 | `bot-email` | `nightwatch-agent[bot]@users.noreply.github.com` | Git commit author email. |
+| `max-context-comments` | `50` | Maximum recent comments included in agent context per collection (sliding window). |
 
 ## Requirements & secrets
 
