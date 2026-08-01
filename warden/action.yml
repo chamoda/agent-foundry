@@ -50,6 +50,10 @@ inputs:
     description: "How many recent PRs to scan for past warden suggestions that drew pushback (to avoid repeating their kind)."
     required: false
     default: "20"
+  max-context-comments:
+    description: "Maximum number of recent comments to include in agent context per collection (sliding window)."
+    required: false
+    default: "50"
 
 runs:
   using: "composite"
@@ -72,6 +76,7 @@ runs:
         REVIEW_FOCUS: ${{ inputs.review-focus }}
         MAX_COMMENTS: ${{ inputs.max-comments }}
         FEEDBACK_PR_LIMIT: ${{ inputs.feedback-pr-limit }}
+        MAX_CONTEXT_COMMENTS: ${{ inputs.max-context-comments }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
         MCP_CONFIG: ${{ inputs.mcp-config }}

@@ -95,6 +95,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `review-focus` | `""` | Extra emphasis appended to the defaults when no review-file is present. |
 | `max-comments` | `25` | Maximum inline comments posted per run. |
 | `feedback-pr-limit` | `20` | Recent PRs scanned for past suggestions that drew pushback. |
+| `max-context-comments` | `50` | Maximum recent comments included in agent context per collection (sliding window). |
 
 ## Requirements
 

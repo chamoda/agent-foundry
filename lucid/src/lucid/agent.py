@@ -26,7 +26,8 @@ Required env: ``GITHUB_REPOSITORY``, ``GITHUB_TOKEN``, and the issue number
 via ``ISSUE_NUMBER`` (set from the event) or ``DISPATCH_ISSUE``.
 Optional env: ``OPENCODE_MODEL``, ``OPENCODE_VARIANT`` (default ``high``),
 ``OPENCODE_PLAN`` (default ``true``), ``SCORE_METHOD`` (``ice``/``rice``,
-default ``ice``), ``VISION_FILE`` (default ``VISION.md``).
+default ``ice``), ``VISION_FILE`` (default ``VISION.md``),
+``MAX_CONTEXT_COMMENTS`` (default ``50``).
 """
 
 from __future__ import annotations
@@ -39,7 +40,7 @@ from dataclasses import dataclass
 from github import Github
 from github.Issue import Issue
 
-from foundry_core import Opencode, ensure_label, env, log
+from foundry_core import Opencode, ensure_label, env, env_int, log
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the score here (in the consumer's checked-out repo).
@@ -82,6 +83,11 @@ RICE_RUBRIC = "\n".join(
 )
 
 
+def _last_n(collection, n: int):
+    """Return at most the last *n* items (sliding window, newest-first)."""
+    return list(collection)[-n:]
+
+
 @dataclass(frozen=True)
 class Settings:
     repo_name: str
@@ -89,6 +95,7 @@ class Settings:
     issue_number: int
     method: str
     vision_file: str
+    max_context_comments: int
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -103,6 +110,7 @@ class Settings:
             ),
             method=method,
             vision_file=env("VISION_FILE", "VISION.md"),
+            max_context_comments=env_int("MAX_CONTEXT_COMMENTS", 50),
         )
 
 
@@ -134,7 +142,10 @@ def build_prompt(issue: Issue, settings: Settings) -> str:
             issue.body or "(no description)",
             "",
             "## Discussion on the issue",
-            *[f"- {c.user.login}: {c.body}" for c in issue.get_comments()],
+            *[
+                f"- {c.user.login}: {c.body}"
+                for c in _last_n(issue.get_comments(), settings.max_context_comments)
+            ],
             "",
             vision_section(settings),
             "",

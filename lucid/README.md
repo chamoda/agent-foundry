@@ -81,6 +81,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `plan` | `true` | Research (read-only) before scoring. `false` = single pass. |
 | `method` | `ice` | Scoring method: `ice` or `rice`. |
 | `vision-file` | `VISION.md` | Path to the maintainer vision file, used to judge impact/alignment. |
+| `max-context-comments` | `50` | Maximum recent comments included in agent context per collection (sliding window). |
 
 ## Requirements
 

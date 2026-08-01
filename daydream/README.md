@@ -71,6 +71,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `idea-label` | `daydream-idea` | Label for new-idea issues. |
 | `maintenance-label` | `daydream-maintenance` | Label for maintenance issues. |
 | `base-label` | `daydream` | Label applied to every issue it files. |
+| `max-context-comments` | `50` | Maximum recent comments included in agent context per collection (sliding window). |
 
 ## Requirements
 
