@@ -19,15 +19,19 @@ def read_json_artifact(path: str) -> dict | None:
         return None
     with open(path, encoding="utf-8") as fh:
         raw = fh.read()
-    os.remove(path)
     try:
-        return json.loads(raw)
+        result = json.loads(raw)
     except json.JSONDecodeError:
         match = re.search(r"\{.*\}", raw, re.DOTALL)  # tolerate stray fences/prose
         if match:
             try:
-                return json.loads(match.group(0))
+                result = json.loads(match.group(0))
             except json.JSONDecodeError:
-                pass
-    log(f"Could not parse {path} as JSON.")
-    return None
+                result = None
+        else:
+            result = None
+    if result is not None:
+        os.remove(path)
+    else:
+        log(f"Could not parse {path} as JSON.")
+    return result
