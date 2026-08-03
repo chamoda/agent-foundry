@@ -34,7 +34,9 @@ def _to_opencode_server(name: str, spec: dict) -> dict | None:
     `.mcp.json` describes a stdio server as ``command``/``args``/``env`` and a
     remote one as ``url``/``headers`` (``type`` "http"/"sse"). opencode wants a
     ``local`` server (``command`` as one array, ``environment``) or a ``remote``
-    one (``url``, ``headers``). Returns None for an entry we can't translate.
+    one (``url``, ``headers``). The ``enabled`` state is propagated from the
+    source entry, defaulting to ``True`` when not specified. Returns None for
+    an entry we can't translate.
     """
     if not isinstance(spec, dict):
         log(f"MCP passthrough: skipping '{name}' — entry is not an object")
@@ -45,7 +47,7 @@ def _to_opencode_server(name: str, spec: dict) -> dict | None:
         if not url:
             log(f"MCP passthrough: skipping '{name}' — remote server has no url")
             return None
-        server = {"type": "remote", "url": url, "enabled": True}
+        server = {"type": "remote", "url": url, "enabled": spec.get("enabled", True)}
         if spec.get("headers"):
             server["headers"] = spec["headers"]
         return server
@@ -55,7 +57,7 @@ def _to_opencode_server(name: str, spec: dict) -> dict | None:
         log(f"MCP passthrough: skipping '{name}' — no command or url")
         return None
     argv = [command, *spec.get("args", [])] if isinstance(command, str) else list(command)
-    server = {"type": "local", "command": argv, "enabled": True}
+    server = {"type": "local", "command": argv, "enabled": spec.get("enabled", True)}
     if spec.get("env"):
         server["environment"] = spec["env"]
     return server
