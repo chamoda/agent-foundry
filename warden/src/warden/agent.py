@@ -40,6 +40,7 @@ from __future__ import annotations
 import itertools
 import os
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 
@@ -124,7 +125,7 @@ def _git(args: list[str]) -> str:
     try:
         out = run(["git", *args], capture_output=True, text=True)
         return (out.stdout or "").strip()
-    except Exception as exc:  # pragma: no cover - git availability varies
+    except (subprocess.CalledProcessError, FileNotFoundError) as exc:  # git may be missing or fail
         log(f"git {' '.join(args)} failed: {exc}")
         return ""
 
