@@ -31,6 +31,7 @@ Optional env: ``OPENCODE_MODEL``, ``OPENCODE_VARIANT`` (default ``high``),
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from itertools import islice
 
@@ -39,6 +40,7 @@ from github.Repository import Repository
 
 from foundry_core import Opencode, ensure_label, env, env_float, env_int, log
 from foundry_core.artifact import read_json_artifact
+from foundry_core.errors import ConfigError
 
 # opencode writes the chosen issue here (in the consumer's checked-out repo).
 ARTIFACT = "daydream_issue.json"
@@ -266,18 +268,21 @@ def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> boo
 
 
 def main() -> None:
-    settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    try:
+        settings = Settings.from_env()
+        opencode = Opencode.from_env()
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
-    created = 0
-    for _ in range(settings.max_issues):
-        if propose_one(repo, settings, opencode):  # counts/context recomputed each round to rebalance
-            created += 1
-        else:
-            log("Nothing to create this round; stopping.")
-            break
-    log(f"daydream-agent created {created} issue(s).")
+        repo = Github(settings.token).get_repo(settings.repo_name)
+        created = 0
+        for _ in range(settings.max_issues):
+            if propose_one(repo, settings, opencode):  # counts/context recomputed each round to rebalance
+                created += 1
+            else:
+                log("Nothing to create this round; stopping.")
+                break
+        log(f"daydream-agent created {created} issue(s).")
+    except ConfigError as exc:
+        sys.exit(f"daydream: {exc}")
 
 
 if __name__ == "__main__":

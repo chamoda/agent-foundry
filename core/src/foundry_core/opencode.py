@@ -11,11 +11,11 @@ import functools
 import json
 import os
 import subprocess
-import sys
 import tempfile
 from dataclasses import dataclass
 
 from foundry_core.config import env, env_bool, env_int
+from foundry_core.errors import AgentError
 from foundry_core.shell import log, run
 
 DEFAULT_MODEL = "opencode/mimo-v2.5-free"
@@ -155,7 +155,7 @@ class Opencode:
         try:
             run(cmd, env=opencode_env, timeout=self.timeout_s or None)
         except subprocess.TimeoutExpired:
-            sys.exit(
+            raise AgentError(
                 f"opencode (agent={agent or 'build'}) exceeded its "
                 f"{self.timeout_s}s timeout and was killed — the pass stalled. "
                 "Raise OPENCODE_TIMEOUT if this was a legitimately long run."
