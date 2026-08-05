@@ -49,6 +49,7 @@ from github.Repository import Repository
 
 from foundry_core import Opencode, env, env_int, log, run
 from foundry_core.artifact import read_json_artifact
+from foundry_core.errors import AgentError, ConfigError
 
 # opencode writes the review here (in the consumer's checked-out repo).
 ARTIFACT = "warden_review.json"
@@ -469,54 +470,57 @@ def post_review(
 
 
 def main() -> None:
-    settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    try:
+        settings = Settings.from_env()
+        opencode = Opencode.from_env()
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
-    pr = repo.get_pull(settings.pr_number)
-    if pr.state != "open":
-        log(f"PR #{pr.number} is {pr.state}; warden only reviews open PRs.")
-        return
+        repo = Github(settings.token).get_repo(settings.repo_name)
+        pr = repo.get_pull(settings.pr_number)
+        if pr.state != "open":
+            log(f"PR #{pr.number} is {pr.state}; warden only reviews open PRs.")
+            return
 
-    head_sha = pr.head.sha
-    state_comment = find_state_comment(pr)
-    last_sha = reviewed_sha(state_comment)
+        head_sha = pr.head.sha
+        state_comment = find_state_comment(pr)
+        last_sha = reviewed_sha(state_comment)
 
-    if last_sha == head_sha:
-        log(f"PR #{pr.number} already reviewed at {head_sha[:7]}; nothing to do.")
-        return
+        if last_sha == head_sha:
+            log(f"PR #{pr.number} already reviewed at {head_sha[:7]}; nothing to do.")
+            return
 
-    incremental = last_sha is not None
-    base_sha = pr.base.sha
-    ensure_commits(base_sha, head_sha, last_sha or "")
-    diff_range = f"{last_sha}..{head_sha}" if incremental else f"{base_sha}...{head_sha}"
-    files = changed_files(diff_range)
-    if not files:
-        log(f"No changed files in {diff_range}; updating state and stopping.")
-        upsert_state(pr, state_comment, head_sha, 0)
-        return
+        incremental = last_sha is not None
+        base_sha = pr.base.sha
+        ensure_commits(base_sha, head_sha, last_sha or "")
+        diff_range = f"{last_sha}..{head_sha}" if incremental else f"{base_sha}...{head_sha}"
+        files = changed_files(diff_range)
+        if not files:
+            log(f"No changed files in {diff_range}; updating state and stopping.")
+            upsert_state(pr, state_comment, head_sha, 0)
+            return
 
-    log(
-        f"Reviewing PR #{pr.number} ({'incremental' if incremental else 'full'}): "
-        f"{diff_range} ({len(files)} file(s))"
-    )
+        log(
+            f"Reviewing PR #{pr.number} ({'incremental' if incremental else 'full'}): "
+            f"{diff_range} ({len(files)} file(s))"
+        )
 
-    opencode.plan_then_build(
-        build_prompt(pr, settings, diff_range, files, incremental),
-        build_instructions(settings),
-        plan_instructions=PLAN_INSTRUCTIONS,
-        build_lead_in=BUILD_LEAD_IN,
-    )
+        opencode.plan_then_build(
+            build_prompt(pr, settings, diff_range, files, incremental),
+            build_instructions(settings),
+            plan_instructions=PLAN_INSTRUCTIONS,
+            build_lead_in=BUILD_LEAD_IN,
+        )
 
-    data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
-    if data is None:
-        sys.exit("warden: opencode did not produce a usable review artifact.")
+        data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
+        if data is None:
+            raise AgentError("warden: opencode did not produce a usable review artifact.")
 
-    comments = valid_comments(data, settings)
-    summary = " ".join(str(data.get("summary") or "").split())
-    posted = post_review(repo, pr, head_sha, summary, comments)
-    upsert_state(pr, state_comment, head_sha, posted)
-    log(f"Posted {posted} inline comment(s) on PR #{pr.number}.")
+        comments = valid_comments(data, settings)
+        summary = " ".join(str(data.get("summary") or "").split())
+        posted = post_review(repo, pr, head_sha, summary, comments)
+        upsert_state(pr, state_comment, head_sha, posted)
+        log(f"Posted {posted} inline comment(s) on PR #{pr.number}.")
+    except (ConfigError, AgentError) as exc:
+        sys.exit(f"warden: {exc}")
 
 
 if __name__ == "__main__":

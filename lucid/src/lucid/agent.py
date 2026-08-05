@@ -41,6 +41,7 @@ from github.Issue import Issue
 
 from foundry_core import Opencode, ensure_label, env, log
 from foundry_core.artifact import read_json_artifact
+from foundry_core.errors import AgentError, ConfigError
 
 # opencode writes the score here (in the consumer's checked-out repo).
 ARTIFACT = "lucid_score.json"
@@ -94,7 +95,7 @@ class Settings:
     def from_env(cls) -> Settings:
         method = env("SCORE_METHOD", "ice").strip().lower()
         if method not in ("ice", "rice"):
-            sys.exit(f"SCORE_METHOD must be 'ice' or 'rice', got {method!r}")
+            raise ConfigError(f"SCORE_METHOD must be 'ice' or 'rice', got {method!r}")
         return cls(
             repo_name=env("GITHUB_REPOSITORY", required=True),
             token=env("GITHUB_TOKEN", required=True),
@@ -327,42 +328,45 @@ def main() -> None:
         "maintained. It still runs when pinned to @v1 but may be removed in a "
         "future major release (v2)."
     )
-    settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    try:
+        settings = Settings.from_env()
+        opencode = Opencode.from_env()
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
-    issue = repo.get_issue(settings.issue_number)
-    if issue.pull_request is not None:
-        log(f"#{settings.issue_number} is a pull request; lucid only scores issues.")
-        return
-    log(f"Scoring issue #{issue.number} ({settings.method.upper()}): {issue.title}")
+        repo = Github(settings.token).get_repo(settings.repo_name)
+        issue = repo.get_issue(settings.issue_number)
+        if issue.pull_request is not None:
+            log(f"#{settings.issue_number} is a pull request; lucid only scores issues.")
+            return
+        log(f"Scoring issue #{issue.number} ({settings.method.upper()}): {issue.title}")
 
-    opencode.plan_then_build(
-        build_prompt(issue, settings),
-        build_instructions(settings.method),
-        plan_instructions=PLAN_INSTRUCTIONS,
-        build_lead_in=BUILD_LEAD_IN,
-    )
+        opencode.plan_then_build(
+            build_prompt(issue, settings),
+            build_instructions(settings.method),
+            plan_instructions=PLAN_INSTRUCTIONS,
+            build_lead_in=BUILD_LEAD_IN,
+        )
 
-    data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
-    if data is None:
-        sys.exit("lucid: opencode did not produce a usable score artifact.")
+        data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
+        if data is None:
+            raise AgentError("lucid: opencode did not produce a usable score artifact.")
 
-    render = render_ice if settings.method == "ice" else render_rice
-    result = render(data)
-    if result is None:
-        sys.exit("lucid: score artifact failed validation; no comment posted.")
-    score, comment = result
+        render = render_ice if settings.method == "ice" else render_rice
+        result = render(data)
+        if result is None:
+            raise AgentError("lucid: score artifact failed validation; no comment posted.")
+        score, comment = result
 
-    comment += (
-        "\n<sub>🔮 Scored by [lucid-agent](https://github.com/chamoda/agent-foundry), "
-        "powered by [opencode](https://opencode.ai).</sub>"
-    )
-    issue.create_comment(comment)
-    apply_score_label(issue, settings.method, score)
-    log(
-        f"Posted {settings.method.upper()} score {score}/10 on issue #{issue.number}."
-    )
+        comment += (
+            "\n<sub>🔮 Scored by [lucid-agent](https://github.com/chamoda/agent-foundry), "
+            "powered by [opencode](https://opencode.ai).</sub>"
+        )
+        issue.create_comment(comment)
+        apply_score_label(issue, settings.method, score)
+        log(
+            f"Posted {settings.method.upper()} score {score}/10 on issue #{issue.number}."
+        )
+    except (ConfigError, AgentError) as exc:
+        sys.exit(f"lucid: {exc}")
 
 
 if __name__ == "__main__":

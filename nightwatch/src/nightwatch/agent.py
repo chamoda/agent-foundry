@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import itertools
 import subprocess
+import sys
 from dataclasses import dataclass
 
 from github import Github
@@ -44,6 +45,7 @@ from foundry_core import (
     run,
     working_tree_dirty,
 )
+from foundry_core.errors import ConfigError
 
 PLAN_INSTRUCTIONS = (
     "## First: plan only\n"
@@ -313,7 +315,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
 
 def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
     if not settings.pr_number or not settings.pr_branch:
-        raise SystemExit("Missing required env var: PR_NUMBER / PR_BRANCH")
+        raise ConfigError("Missing required env var: PR_NUMBER / PR_BRANCH")
     pr_number = int(settings.pr_number)
     branch = settings.pr_branch
     log(f"Revising PR #{pr_number} on branch {branch}")
@@ -388,17 +390,20 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
 
 
 def main() -> None:
-    settings = Settings.from_env()
-    opencode = Opencode.from_env()
+    try:
+        settings = Settings.from_env()
+        opencode = Opencode.from_env()
 
-    run(["git", "config", "user.name", settings.bot_name])
-    run(["git", "config", "user.email", settings.bot_email])
+        run(["git", "config", "user.name", settings.bot_name])
+        run(["git", "config", "user.email", settings.bot_email])
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
-    if settings.event == "pull_request_review":
-        run_revision_mode(repo, settings, opencode)
-    else:
-        run_issue_mode(repo, settings, opencode)
+        repo = Github(settings.token).get_repo(settings.repo_name)
+        if settings.event == "pull_request_review":
+            run_revision_mode(repo, settings, opencode)
+        else:
+            run_issue_mode(repo, settings, opencode)
+    except ConfigError as exc:
+        sys.exit(f"nightwatch: {exc}")
 
 
 if __name__ == "__main__":
