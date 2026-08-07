@@ -67,6 +67,7 @@ class Settings:
     idea_label: str
     maintenance_label: str
     base_label: str
+    rejected_issue_limit: int
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -79,6 +80,7 @@ class Settings:
             idea_label=env("IDEA_LABEL", "daydream-idea"),
             maintenance_label=env("MAINTENANCE_LABEL", "daydream-maintenance"),
             base_label=env("BASE_LABEL", "daydream"),
+            rejected_issue_limit=env_int("REJECTED_ISSUE_LIMIT", 50),
         )
 
 
@@ -110,11 +112,29 @@ def existing_issues_context(repo: Repository, settings: Settings) -> str:
         else:
             completed_lines.append(f"- #{issue.number} {issue.title}")
 
-    # Rejections are durable signal: always include every not-planned issue the
-    # agent itself filed, even ones that scrolled out of the recent-50 window.
-    for issue in repo.get_issues(state="closed", labels=[settings.base_label]):
-        if issue.pull_request is None and issue.state_reason == "not_planned":
-            rejected_lines.setdefault(issue.number, snippet_line(issue, 200))
+    # Rejections are durable signal: always include not-planned issues the agent
+    # itself filed, even ones that scrolled out of the recent-50 window — but cap
+    # at `rejected_issue_limit` to keep prompt size manageable.
+    all_rejected = [
+        issue
+        for issue in repo.get_issues(
+            state="closed",
+            labels=[settings.base_label],
+            sort="updated",
+            direction="desc",
+        )
+        if issue.pull_request is None and issue.state_reason == "not_planned"
+    ]
+    included = 0
+    for issue in islice(all_rejected, settings.rejected_issue_limit):
+        rejected_lines.setdefault(issue.number, snippet_line(issue, 200))
+        included += 1
+    if len(all_rejected) > settings.rejected_issue_limit:
+        log(
+            f"Truncated rejected issues: {len(all_rejected)} total, "
+            f"including only the {included} most recently updated "
+            f"(limit={settings.rejected_issue_limit})."
+        )
 
     parts = ["## Existing OPEN issues (do not duplicate these)"]
     parts.append("\n".join(open_lines) if open_lines else "(none)")
