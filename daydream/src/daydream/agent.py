@@ -229,8 +229,8 @@ def create_issue(repo: Repository, settings: Settings, data: dict) -> bool:
         log(f"Skipping: unknown category {category!r}.")
         return False
 
-    title = (data.get("title") or "").strip()
-    body = (data.get("body") or "").strip()
+    title = str(data.get("title") or "").strip()
+    body = str(data.get("body") or "").strip()
     if not title or not body:
         log("Skipping: artifact missing title or body.")
         return False
