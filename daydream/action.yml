@@ -58,6 +58,10 @@ inputs:
     description: "Label applied to every issue the agent files."
     required: false
     default: "daydream"
+  dry-run:
+    description: "Run the full opencode plan/build cycle but skip creating GitHub resources. Logs what would have been done."
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -85,6 +89,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
         MCP_CONFIG: ${{ inputs.mcp-config }}
+        DRY_RUN: ${{ inputs.dry-run }}
       run: |
         export PATH="$HOME/.opencode/bin:$PATH"
         # Run from the consumer's checked-out repo (cwd). $GITHUB_ACTION_PATH is

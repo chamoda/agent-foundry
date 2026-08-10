@@ -19,3 +19,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: chamoda/agent-foundry/lucid@v1
+        # with:
+        #   dry-run: "true"  # Run opencode but skip posting score/label

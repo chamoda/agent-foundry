@@ -47,7 +47,7 @@ from github import Github, GithubException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from foundry_core import Opencode, env, env_int, log, run
+from foundry_core import Opencode, env, env_bool, env_int, log, run
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the review here (in the consumer's checked-out repo).
@@ -100,6 +100,7 @@ class Settings:
     extra_focus: str
     max_comments: int
     feedback_pr_limit: int
+    dry_run: bool
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -111,6 +112,7 @@ class Settings:
             extra_focus=env("REVIEW_FOCUS", "").strip(),
             max_comments=env_int("MAX_COMMENTS", 25),
             feedback_pr_limit=env_int("FEEDBACK_PR_LIMIT", 20),
+            dry_run=env_bool("DRY_RUN", False),
         )
 
 
@@ -493,7 +495,10 @@ def main() -> None:
     files = changed_files(diff_range)
     if not files:
         log(f"No changed files in {diff_range}; updating state and stopping.")
-        upsert_state(pr, state_comment, head_sha, 0)
+        if not settings.dry_run:
+            upsert_state(pr, state_comment, head_sha, 0)
+        else:
+            log(f"dry-run: would have updated state marker to {head_sha[:7]}")
         return
 
     log(
@@ -514,9 +519,13 @@ def main() -> None:
 
     comments = valid_comments(data, settings)
     summary = " ".join(str(data.get("summary") or "").split())
-    posted = post_review(repo, pr, head_sha, summary, comments)
-    upsert_state(pr, state_comment, head_sha, posted)
-    log(f"Posted {posted} inline comment(s) on PR #{pr.number}.")
+    if settings.dry_run:
+        log(f"dry-run: would have posted {len(comments)} inline comment(s) on PR #{pr.number}")
+        log(f"dry-run: would have updated state marker to {head_sha[:7]}")
+    else:
+        posted = post_review(repo, pr, head_sha, summary, comments)
+        upsert_state(pr, state_comment, head_sha, posted)
+        log(f"Posted {posted} inline comment(s) on PR #{pr.number}.")
 
 
 if __name__ == "__main__":

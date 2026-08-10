@@ -39,7 +39,7 @@ from dataclasses import dataclass
 from github import Github
 from github.Issue import Issue
 
-from foundry_core import Opencode, ensure_label, env, log
+from foundry_core import Opencode, ensure_label, env, env_bool, log
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the score here (in the consumer's checked-out repo).
@@ -89,6 +89,7 @@ class Settings:
     issue_number: int
     method: str
     vision_file: str
+    dry_run: bool
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -103,6 +104,7 @@ class Settings:
             ),
             method=method,
             vision_file=env("VISION_FILE", "VISION.md"),
+            dry_run=env_bool("DRY_RUN", False),
         )
 
 
@@ -355,14 +357,18 @@ def main() -> None:
     score, comment = result
 
     comment += (
-        "\n<sub>🔮 Scored by [lucid-agent](https://github.com/chamoda/agent-foundry), "
+        "\n<sub>\U0001f52e Scored by [lucid-agent](https://github.com/chamoda/agent-foundry), "
         "powered by [opencode](https://opencode.ai).</sub>"
     )
-    issue.create_comment(comment)
-    apply_score_label(issue, settings.method, score)
-    log(
-        f"Posted {settings.method.upper()} score {score}/10 on issue #{issue.number}."
-    )
+    if settings.dry_run:
+        log(f"dry-run: would have posted {settings.method.upper()} score {score}/10 on issue #{issue.number}")
+        log(f"dry-run: would have labeled issue #{issue.number} with {settings.method}-{score}")
+    else:
+        issue.create_comment(comment)
+        apply_score_label(issue, settings.method, score)
+        log(
+            f"Posted {settings.method.upper()} score {score}/10 on issue #{issue.number}."
+        )
 
 
 if __name__ == "__main__":

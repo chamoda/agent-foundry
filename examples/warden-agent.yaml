@@ -34,3 +34,5 @@ jobs:
         with:
           fetch-depth: 0 # full history so re-reviews can diff only the new commits
       - uses: chamoda/agent-foundry/warden@v1
+        # with:
+        #   dry-run: "true"  # Run opencode but skip posting review/state

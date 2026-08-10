@@ -38,6 +38,7 @@ from github.Repository import Repository
 from foundry_core import (
     Opencode,
     env,
+    env_bool,
     env_int,
     log,
     references_issue,
@@ -65,6 +66,7 @@ class Settings:
     dispatch_issue: str
     pr_number: str
     pr_branch: str
+    dry_run: bool
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -81,6 +83,7 @@ class Settings:
             dispatch_issue=env("DISPATCH_ISSUE"),
             pr_number=env("PR_NUMBER"),
             pr_branch=env("PR_BRANCH"),
+            dry_run=env_bool("DRY_RUN", False),
         )
 
     def branch_for(self, issue_number: int) -> str:
@@ -262,10 +265,13 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
 
     if not working_tree_dirty():
         log(f"opencode produced no changes for issue #{issue_number}.")
-        issue.create_comment(
-            "🌙 nightwatch-agent looked at this issue but did not produce any changes "
-            "this run. It will retry on the next scheduled run."
-        )
+        if not settings.dry_run:
+            issue.create_comment(
+                "🌙 nightwatch-agent looked at this issue but did not produce any changes "
+                "this run. It will retry on the next scheduled run."
+            )
+        else:
+            log("dry-run: opencode produced no changes — would have posted comment.")
         return
 
     run(["git", "switch", "-C", branch])
@@ -282,6 +288,10 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
             ),
         ]
     )
+    if settings.dry_run:
+        log(f"dry-run: would have pushed branch {branch}")
+        log(f"dry-run: would have opened PR for issue #{issue_number}")
+        return
     if not try_push(branch, force=True):
         log(f"Issue #{issue_number} needs workflow-file changes this token can't push.")
         if not already_blocked(issue.get_comments()):
@@ -366,13 +376,20 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
 
     if not working_tree_dirty():
         log(f"opencode produced no changes for PR #{pr_number}.")
-        pr.create_issue_comment(
-            "🌙 nightwatch-agent reviewed the feedback but did not produce any changes this run."
-        )
+        if not settings.dry_run:
+            pr.create_issue_comment(
+                "🌙 nightwatch-agent reviewed the feedback but did not produce any changes this run."
+            )
+        else:
+            log("dry-run: opencode produced no changes — would have posted comment.")
         return
 
     run(["git", "add", "-A"])
     run(["git", "commit", "-m", f"nightwatch: address review feedback on #{pr_number}"])
+    if settings.dry_run:
+        log(f"dry-run: would have pushed to branch {branch}")
+        log(f"dry-run: would have posted re-review comment on PR #{pr_number}")
+        return
     if not try_push(branch, force=False):
         log(f"PR #{pr_number} needs workflow-file changes this token can't push.")
         if not already_blocked(pr.get_issue_comments()):

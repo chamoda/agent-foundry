@@ -42,6 +42,10 @@ inputs:
     description: "Path (relative to repo root) of the maintainer vision file, used to judge impact/alignment."
     required: false
     default: "VISION.md"
+  dry-run:
+    description: "Run the full opencode plan/build cycle but skip posting the score comment and label. Logs what would have been done."
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -65,6 +69,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
         MCP_CONFIG: ${{ inputs.mcp-config }}
+        DRY_RUN: ${{ inputs.dry-run }}
         # Event context (set by GitHub on the consumer's workflow run).
         ISSUE_NUMBER: ${{ github.event.issue.number }}
         DISPATCH_ISSUE: ${{ github.event.inputs.issue }}
