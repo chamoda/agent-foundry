@@ -50,6 +50,10 @@ inputs:
     description: "Git author email for commits the agent makes."
     required: false
     default: "nightwatch-agent[bot]@users.noreply.github.com"
+  dry-run:
+    description: "Run the full opencode plan/build cycle but skip creating GitHub resources (PRs, comments). Logs what would have been done."
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -75,6 +79,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
         MCP_CONFIG: ${{ inputs.mcp-config }}
+        DRY_RUN: ${{ inputs.dry-run }}
         # Event context (set by GitHub on the consumer's workflow run).
         DISPATCH_ISSUE: ${{ github.event.inputs.issue }}
         PR_NUMBER: ${{ github.event.pull_request.number }}

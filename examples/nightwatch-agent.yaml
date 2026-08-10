@@ -34,3 +34,5 @@ jobs:
         with:
           fetch-depth: 0
       - uses: chamoda/agent-foundry/nightwatch@v1
+        # with:
+        #   dry-run: "true"  # Run opencode but skip creating PRs/comments

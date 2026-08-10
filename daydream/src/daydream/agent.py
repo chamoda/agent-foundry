@@ -37,7 +37,7 @@ from itertools import islice
 from github import Github
 from github.Repository import Repository
 
-from foundry_core import Opencode, ensure_label, env, env_float, env_int, log
+from foundry_core import Opencode, ensure_label, env, env_bool, env_float, env_int, log
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the chosen issue here (in the consumer's checked-out repo).
@@ -67,6 +67,7 @@ class Settings:
     idea_label: str
     maintenance_label: str
     base_label: str
+    dry_run: bool
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -79,6 +80,7 @@ class Settings:
             idea_label=env("IDEA_LABEL", "daydream-idea"),
             maintenance_label=env("MAINTENANCE_LABEL", "daydream-maintenance"),
             base_label=env("BASE_LABEL", "daydream"),
+            dry_run=env_bool("DRY_RUN", False),
         )
 
 
@@ -238,10 +240,15 @@ def create_issue(repo: Repository, settings: Settings, data: dict) -> bool:
     category_label = (
         settings.idea_label if category == "idea" else settings.maintenance_label
     )
+
+    if settings.dry_run:
+        log(f'dry-run: would have created issue "{title}" (category: {category})')
+        return True
+
     ensure_label(repo, settings.base_label, LABEL_COLORS["base"])
     ensure_label(repo, category_label, LABEL_COLORS[category])
 
-    body += "\n\n<sub>💭 Filed by [daydream-agent](https://github.com/chamoda/agent-foundry), powered by [opencode](https://opencode.ai).</sub>"
+    body += "\n\n<sub>\U0001f4ad Filed by [daydream-agent](https://github.com/chamoda/agent-foundry), powered by [opencode](https://opencode.ai).</sub>"
 
     issue = repo.create_issue(title=title, body=body)
     issue.set_labels(settings.base_label, category_label)

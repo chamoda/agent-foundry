@@ -50,6 +50,10 @@ inputs:
     description: "How many recent PRs to scan for past warden suggestions that drew pushback (to avoid repeating their kind)."
     required: false
     default: "20"
+  dry-run:
+    description: "Run the full opencode plan/build cycle but skip posting the review and state marker. Logs what would have been done."
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -75,6 +79,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         OPENCODE_API_KEY: ${{ inputs.opencode-api-key }}
         MCP_CONFIG: ${{ inputs.mcp-config }}
+        DRY_RUN: ${{ inputs.dry-run }}
         # Event context (set by GitHub on the consumer's workflow run).
         PR_NUMBER: ${{ github.event.pull_request.number }}
         DISPATCH_PR: ${{ github.event.inputs.pr }}
