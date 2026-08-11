@@ -54,7 +54,7 @@ def _to_opencode_server(name: str, spec: dict) -> dict | None:
     if not command:
         log(f"MCP passthrough: skipping '{name}' — no command or url")
         return None
-    argv = [command, *spec.get("args", [])] if isinstance(command, str) else list(command)
+    argv = ([command] if isinstance(command, str) else list(command)) + list(spec.get("args", []))
     server = {"type": "local", "command": argv, "enabled": True}
     if spec.get("env"):
         server["environment"] = spec["env"]
