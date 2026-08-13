@@ -43,12 +43,11 @@ import re
 import sys
 from dataclasses import dataclass
 
+from foundry_core import Opencode, env, env_int, log, run
+from foundry_core.artifact import read_json_artifact
 from github import Github, GithubException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
-
-from foundry_core import Opencode, env, env_int, log, run
-from foundry_core.artifact import read_json_artifact
 
 # opencode writes the review here (in the consumer's checked-out repo).
 ARTIFACT = "warden_review.json"
@@ -436,7 +435,7 @@ def post_review(
     ]
     try:
         pr.create_review(
-            commit=commit, body=body, event=event, comments=review_comments
+            commit=commit, body=body, event=event, comments=review_comments  # type: ignore[reportArgumentType]
         )
         return len(review_comments)
     except GithubException as exc:

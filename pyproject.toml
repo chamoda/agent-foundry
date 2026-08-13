@@ -1,2 +1,17 @@
 [tool.uv.workspace]
 members = ["core", "nightwatch", "daydream", "lucid", "warden"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+exclude = [".uv/", "build/", "dist/", ".venv/"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+include = ["core/src", "nightwatch/src", "daydream/src", "lucid/src", "warden/src"]
+reportMissingTypeStubs = false

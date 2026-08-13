@@ -33,6 +33,16 @@ that depends on `foundry-core = { workspace = true }`, and a `src/<agent>/`
 package; add the directory to `[tool.uv.workspace] members` in the root
 `pyproject.toml`; run `uv lock`.
 
+## Linting & type-checking
+
+Both tools are configured in the root `pyproject.toml`.
+
+```bash
+ruff check .           # lint (pycodestyle, pyflakes, isort)
+ruff check --fix .     # auto-fix safe violations (import sorting, etc.)
+pyright                # static type checking
+```
+
 ## Releasing (maintainers)
 
 Versioning follows the standard GitHub Actions convention: **immutable
