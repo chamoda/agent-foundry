@@ -36,11 +36,10 @@ import os
 import sys
 from dataclasses import dataclass
 
-from github import Github
-from github.Issue import Issue
-
 from foundry_core import Opencode, ensure_label, env, log
 from foundry_core.artifact import read_json_artifact
+from github import Github
+from github.Issue import Issue
 
 # opencode writes the score here (in the consumer's checked-out repo).
 ARTIFACT = "lucid_score.json"

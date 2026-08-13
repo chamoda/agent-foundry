@@ -34,11 +34,10 @@ import os
 from dataclasses import dataclass
 from itertools import islice
 
-from github import Github
-from github.Repository import Repository
-
 from foundry_core import Opencode, ensure_label, env, env_float, env_int, log
 from foundry_core.artifact import read_json_artifact
+from github import Github
+from github.Repository import Repository
 
 # opencode writes the chosen issue here (in the consumer's checked-out repo).
 ARTIFACT = "daydream_issue.json"

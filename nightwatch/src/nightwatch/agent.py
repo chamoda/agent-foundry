@@ -31,10 +31,6 @@ import itertools
 import subprocess
 from dataclasses import dataclass
 
-from github import Github
-from github.PullRequest import PullRequest
-from github.Repository import Repository
-
 from foundry_core import (
     Opencode,
     env,
@@ -44,6 +40,9 @@ from foundry_core import (
     run,
     working_tree_dirty,
 )
+from github import Github
+from github.PullRequest import PullRequest
+from github.Repository import Repository
 
 PLAN_INSTRUCTIONS = (
     "## First: plan only\n"
