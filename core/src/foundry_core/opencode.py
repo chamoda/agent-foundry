@@ -71,7 +71,7 @@ def _project_mcp() -> dict:
     if not path or not os.path.isfile(path):
         return {}
     try:
-        with open(path) as fh:
+        with open(path, encoding="utf-8") as fh:
             data = json.load(fh)
     except (OSError, json.JSONDecodeError) as exc:
         log(f"MCP passthrough: could not read {path} ({exc}); skipping")
