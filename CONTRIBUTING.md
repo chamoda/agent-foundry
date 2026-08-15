@@ -28,6 +28,18 @@ uv sync --all-packages   # set up the workspace venv
 uv run python -m nightwatch   # needs GITHUB_REPOSITORY / GITHUB_TOKEN etc.
 ```
 
+### Code quality
+
+Before opening a PR, run these checks locally — CI will run them on every
+pull request:
+
+```bash
+uv run ruff check .           # lint
+uv run ruff format --check .  # check formatting
+uv run pyright                # type-check
+uv run pytest                 # run tests
+```
+
 Adding a new agent: create `<agent>/` with an `action.yml`, a `pyproject.toml`
 that depends on `foundry-core = { workspace = true }`, and a `src/<agent>/`
 package; add the directory to `[tool.uv.workspace] members` in the root
