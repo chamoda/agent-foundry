@@ -394,11 +394,12 @@ def main() -> None:
     run(["git", "config", "user.name", settings.bot_name])
     run(["git", "config", "user.email", settings.bot_email])
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
-    if settings.event == "pull_request_review":
-        run_revision_mode(repo, settings, opencode)
-    else:
-        run_issue_mode(repo, settings, opencode)
+    with Github(settings.token) as gh:
+        repo = gh.get_repo(settings.repo_name)
+        if settings.event == "pull_request_review":
+            run_revision_mode(repo, settings, opencode)
+        else:
+            run_issue_mode(repo, settings, opencode)
 
 
 if __name__ == "__main__":

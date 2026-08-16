@@ -330,39 +330,40 @@ def main() -> None:
     settings = Settings.from_env()
     opencode = Opencode.from_env()
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
-    issue = repo.get_issue(settings.issue_number)
-    if issue.pull_request is not None:
-        log(f"#{settings.issue_number} is a pull request; lucid only scores issues.")
-        return
-    log(f"Scoring issue #{issue.number} ({settings.method.upper()}): {issue.title}")
+    with Github(settings.token) as gh:
+        repo = gh.get_repo(settings.repo_name)
+        issue = repo.get_issue(settings.issue_number)
+        if issue.pull_request is not None:
+            log(f"#{settings.issue_number} is a pull request; lucid only scores issues.")
+            return
+        log(f"Scoring issue #{issue.number} ({settings.method.upper()}): {issue.title}")
 
-    opencode.plan_then_build(
-        build_prompt(issue, settings),
-        build_instructions(settings.method),
-        plan_instructions=PLAN_INSTRUCTIONS,
-        build_lead_in=BUILD_LEAD_IN,
-    )
+        opencode.plan_then_build(
+            build_prompt(issue, settings),
+            build_instructions(settings.method),
+            plan_instructions=PLAN_INSTRUCTIONS,
+            build_lead_in=BUILD_LEAD_IN,
+        )
 
-    data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
-    if data is None:
-        sys.exit("lucid: opencode did not produce a usable score artifact.")
+        data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
+        if data is None:
+            sys.exit("lucid: opencode did not produce a usable score artifact.")
 
-    render = render_ice if settings.method == "ice" else render_rice
-    result = render(data)
-    if result is None:
-        sys.exit("lucid: score artifact failed validation; no comment posted.")
-    score, comment = result
+        render = render_ice if settings.method == "ice" else render_rice
+        result = render(data)
+        if result is None:
+            sys.exit("lucid: score artifact failed validation; no comment posted.")
+        score, comment = result
 
-    comment += (
-        "\n<sub>🔮 Scored by [lucid-agent](https://github.com/chamoda/agent-foundry), "
-        "powered by [opencode](https://opencode.ai).</sub>"
-    )
-    issue.create_comment(comment)
-    apply_score_label(issue, settings.method, score)
-    log(
-        f"Posted {settings.method.upper()} score {score}/10 on issue #{issue.number}."
-    )
+        comment += (
+            "\n<sub>🔮 Scored by [lucid-agent](https://github.com/chamoda/agent-foundry), "
+            "powered by [opencode](https://opencode.ai).</sub>"
+        )
+        issue.create_comment(comment)
+        apply_score_label(issue, settings.method, score)
+        log(
+            f"Posted {settings.method.upper()} score {score}/10 on issue #{issue.number}."
+        )
 
 
 if __name__ == "__main__":

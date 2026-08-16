@@ -269,15 +269,16 @@ def main() -> None:
     settings = Settings.from_env()
     opencode = Opencode.from_env()
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
-    created = 0
-    for _ in range(settings.max_issues):
-        if propose_one(repo, settings, opencode):  # counts/context recomputed each round to rebalance
-            created += 1
-        else:
-            log("Nothing to create this round; stopping.")
-            break
-    log(f"daydream-agent created {created} issue(s).")
+    with Github(settings.token) as gh:
+        repo = gh.get_repo(settings.repo_name)
+        created = 0
+        for _ in range(settings.max_issues):
+            if propose_one(repo, settings, opencode):  # counts/context recomputed each round to rebalance
+                created += 1
+            else:
+                log("Nothing to create this round; stopping.")
+                break
+        log(f"daydream-agent created {created} issue(s).")
 
 
 if __name__ == "__main__":
