@@ -39,7 +39,7 @@ from dataclasses import dataclass
 from github import Github
 from github.Issue import Issue
 
-from foundry_core import Opencode, ensure_label, env, log
+from foundry_core import Opencode, ensure_label, env, log, require_int
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the score here (in the consumer's checked-out repo).
@@ -98,8 +98,9 @@ class Settings:
         return cls(
             repo_name=env("GITHUB_REPOSITORY", required=True),
             token=env("GITHUB_TOKEN", required=True),
-            issue_number=int(
-                env("DISPATCH_ISSUE") or env("ISSUE_NUMBER", required=True)
+            issue_number=require_int(
+                env("DISPATCH_ISSUE") or env("ISSUE_NUMBER", required=True),
+                "DISPATCH_ISSUE",
             ),
             method=method,
             vision_file=env("VISION_FILE", "VISION.md"),

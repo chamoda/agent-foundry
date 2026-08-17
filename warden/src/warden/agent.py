@@ -47,7 +47,7 @@ from github import Github, GithubException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from foundry_core import Opencode, env, env_int, log, run
+from foundry_core import Opencode, env, env_int, log, require_int, run
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the review here (in the consumer's checked-out repo).
@@ -106,7 +106,7 @@ class Settings:
         return cls(
             repo_name=env("GITHUB_REPOSITORY", required=True),
             token=env("GITHUB_TOKEN", required=True),
-            pr_number=int(env("DISPATCH_PR") or env("PR_NUMBER", required=True)),
+            pr_number=require_int(env("DISPATCH_PR") or env("PR_NUMBER", required=True), "DISPATCH_PR"),
             review_file=env("REVIEW_FILE", "REVIEW.md"),
             extra_focus=env("REVIEW_FOCUS", "").strip(),
             max_comments=env_int("MAX_COMMENTS", 25),
