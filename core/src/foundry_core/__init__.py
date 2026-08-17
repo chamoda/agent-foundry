@@ -5,7 +5,7 @@ configuration from the environment, logging/subprocess helpers, the opencode
 driver, and small GitHub utilities.
 """
 
-from foundry_core.config import env, env_bool, env_float, env_int
+from foundry_core.config import env, env_bool, env_float, env_int, require_int
 from foundry_core.gh import ensure_label, references_issue
 from foundry_core.opencode import Opencode
 from foundry_core.shell import log, run, working_tree_dirty
@@ -21,6 +21,7 @@ __all__ = [
     "env_int",
     "log",
     "references_issue",
+    "require_int",
     "run",
     "working_tree_dirty",
 ]

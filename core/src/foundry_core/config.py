@@ -32,3 +32,11 @@ def env_int(name: str, default: int) -> int:
 def env_float(name: str, default: float) -> float:
     raw = os.environ.get(name)
     return float(raw) if raw else default
+
+
+def require_int(value: str, name: str) -> int:
+    """Cast *value* to ``int`` or exit with a clear message."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise SystemExit(f"{name} must be a number, got {value!r}")

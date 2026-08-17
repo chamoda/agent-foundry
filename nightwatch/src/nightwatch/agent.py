@@ -41,6 +41,7 @@ from foundry_core import (
     env_int,
     log,
     references_issue,
+    require_int,
     run,
     working_tree_dirty,
 )
@@ -145,7 +146,7 @@ def rejected_attempts_context(repo: Repository, issue_number: int) -> str:
 
 def select_issue(repo: Repository, settings: Settings) -> int | None:
     if settings.dispatch_issue:
-        return int(settings.dispatch_issue)
+        return require_int(settings.dispatch_issue, "DISPATCH_ISSUE")
 
     open_prs = list(repo.get_pulls(state="open"))
     open_branches = {pr.head.ref for pr in open_prs}
@@ -314,7 +315,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
 def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
     if not settings.pr_number or not settings.pr_branch:
         raise SystemExit("Missing required env var: PR_NUMBER / PR_BRANCH")
-    pr_number = int(settings.pr_number)
+    pr_number = require_int(settings.pr_number, "PR_NUMBER")
     branch = settings.pr_branch
     log(f"Revising PR #{pr_number} on branch {branch}")
 
