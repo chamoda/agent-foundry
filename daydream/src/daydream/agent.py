@@ -252,7 +252,7 @@ def create_issue(repo: Repository, settings: Settings, data: dict) -> bool:
 # --------------------------------------------------------------------------- #
 
 
-def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> bool:
+def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> bool | None:
     opencode.plan_then_build(
         build_prompt(repo, settings),
         build_instructions(),
@@ -261,7 +261,7 @@ def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> boo
     )
     data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
     if data is None:
-        return False
+        return None
     return create_issue(repo, settings, data)
 
 
@@ -272,9 +272,13 @@ def main() -> None:
     repo = Github(settings.token).get_repo(settings.repo_name)
     created = 0
     for _ in range(settings.max_issues):
-        if propose_one(repo, settings, opencode):  # counts/context recomputed each round to rebalance
+        result = propose_one(repo, settings, opencode)  # counts/context recomputed each round to rebalance
+        if result is True:
             created += 1
-        else:
+        elif result is None:
+            log("opencode produced no usable artifact; retrying next round.")
+            continue
+        else:  # False — genuine "nothing to do"
             log("Nothing to create this round; stopping.")
             break
     log(f"daydream-agent created {created} issue(s).")
