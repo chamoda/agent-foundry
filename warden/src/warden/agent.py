@@ -129,10 +129,19 @@ def _git(args: list[str]) -> str:
         return ""
 
 
+def _git_ok(args: list[str]) -> bool:
+    """Return True if the git command exits 0, False otherwise."""
+    try:
+        run(["git", *args], capture_output=True, text=True)
+        return True
+    except Exception:
+        return False
+
+
 def ensure_commits(*shas: str) -> None:
     """Best-effort fetch so the SHAs we want to diff are present locally."""
     for sha in shas:
-        if sha and not _git(["cat-file", "-e", f"{sha}^{{commit}}"]):
+        if sha and not _git_ok(["cat-file", "-e", f"{sha}^{{commit}}"]):
             _git(["fetch", "--no-tags", "--depth=200", "origin", sha])
 
 
