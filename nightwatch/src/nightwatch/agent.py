@@ -27,7 +27,6 @@ default ``high``), ``OPENCODE_PLAN`` (default ``true``), ``MAX_ATTEMPTS``,
 
 from __future__ import annotations
 
-import itertools
 import subprocess
 from dataclasses import dataclass
 
@@ -92,18 +91,29 @@ class Settings:
 # --------------------------------------------------------------------------- #
 
 
-def rejected_pulls(repo: Repository, issue_number: int) -> list[PullRequest]:
+def rejected_pulls(
+    github: Github, repo: Repository, issue_number: int
+) -> list[PullRequest]:
     """Closed-but-not-merged PRs that referenced this issue."""
+    query = (
+        f"is:pr is:closed repo:{repo.full_name}"
+        f" #{issue_number} in:body"
+    )
+    results = github.search_issues(query)
     rejected: list[PullRequest] = []
-    closed = repo.get_pulls(state="closed", sort="created", direction="desc")
-    for pr in itertools.islice(closed, 100):
-        if pr.merged_at is None and references_issue(pr.body, issue_number):
-            rejected.append(pr)
+    for result in results:
+        if (
+            result.pull_request is not None
+            and result.pull_request.merged_at is None
+        ):
+            rejected.append(result.as_pull_request())
     return rejected
 
 
-def rejected_attempts_context(repo: Repository, issue_number: int) -> str:
-    rejected = rejected_pulls(repo, issue_number)
+def rejected_attempts_context(
+    github: Github, repo: Repository, issue_number: int
+) -> str:
+    rejected = rejected_pulls(github, repo, issue_number)
     if not rejected:
         return ""
 
@@ -143,7 +153,9 @@ def rejected_attempts_context(repo: Repository, issue_number: int) -> str:
 # --------------------------------------------------------------------------- #
 
 
-def select_issue(repo: Repository, settings: Settings) -> int | None:
+def select_issue(
+    github: Github, repo: Repository, settings: Settings
+) -> int | None:
     if settings.dispatch_issue:
         return int(settings.dispatch_issue)
 
@@ -163,7 +175,7 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
         if has_open_pr(issue.number):
             log(f"issue #{issue.number}: already has an open PR, skipping")
             continue
-        attempts = len(rejected_pulls(repo, issue.number))
+        attempts = len(rejected_pulls(github, repo, issue.number))
         if attempts >= settings.max_attempts:
             log(
                 f"issue #{issue.number}: {attempts} rejected attempts "
@@ -222,8 +234,10 @@ def already_blocked(existing) -> bool:
     return any(_BLOCKED_MARKER in (c.body or "") for c in existing)
 
 
-def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
-    issue_number = select_issue(repo, settings)
+def run_issue_mode(
+    github: Github, repo: Repository, settings: Settings, opencode: Opencode
+) -> None:
+    issue_number = select_issue(github, repo, settings)
     if issue_number is None:
         log("No eligible open issue to work on. Nothing to do.")
         return
@@ -243,7 +257,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
             "",
             "## Discussion on the issue",
             *[f"- {c.user.login}: {c.body}" for c in issue.get_comments()],
-            rejected_attempts_context(repo, issue_number),
+            rejected_attempts_context(github, repo, issue_number),
         ]
     )
     build_instructions = "\n".join(
@@ -394,11 +408,12 @@ def main() -> None:
     run(["git", "config", "user.name", settings.bot_name])
     run(["git", "config", "user.email", settings.bot_email])
 
-    repo = Github(settings.token).get_repo(settings.repo_name)
+    github = Github(settings.token)
+    repo = github.get_repo(settings.repo_name)
     if settings.event == "pull_request_review":
         run_revision_mode(repo, settings, opencode)
     else:
-        run_issue_mode(repo, settings, opencode)
+        run_issue_mode(github, repo, settings, opencode)
 
 
 if __name__ == "__main__":
