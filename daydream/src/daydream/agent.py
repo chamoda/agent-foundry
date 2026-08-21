@@ -100,7 +100,7 @@ def existing_issues_context(repo: Repository, settings: Settings) -> str:
             continue
         open_lines.append(snippet_line(issue, 400))
 
-    completed_lines: list[str] = []
+    completed_lines: dict[int, str] = {}
     rejected_lines: dict[int, str] = {}
     for issue in islice(repo.get_issues(state="closed", sort="updated", direction="desc"), 50):
         if issue.pull_request is not None:
@@ -108,7 +108,13 @@ def existing_issues_context(repo: Repository, settings: Settings) -> str:
         if issue.state_reason == "not_planned":
             rejected_lines[issue.number] = snippet_line(issue, 200)
         else:
-            completed_lines.append(f"- #{issue.number} {issue.title}")
+            completed_lines[issue.number] = f"- #{issue.number} {issue.title}"
+
+    # Completed issues are durable signal: always include every completed issue the
+    # agent itself filed, even ones that scrolled out of the recent-50 window.
+    for issue in repo.get_issues(state="closed", labels=[settings.base_label]):
+        if issue.pull_request is None and issue.state_reason == "completed":
+            completed_lines.setdefault(issue.number, f"- #{issue.number} {issue.title}")
 
     # Rejections are durable signal: always include every not-planned issue the
     # agent itself filed, even ones that scrolled out of the recent-50 window.
@@ -119,7 +125,7 @@ def existing_issues_context(repo: Repository, settings: Settings) -> str:
     parts = ["## Existing OPEN issues (do not duplicate these)"]
     parts.append("\n".join(open_lines) if open_lines else "(none)")
     parts.append("\n## Recently CLOSED issues — completed (already done; do not re-file)")
-    parts.append("\n".join(completed_lines) if completed_lines else "(none)")
+    parts.append("\n".join(completed_lines.values()) if completed_lines else "(none)")
     parts.append(
         "\n## Issues closed as NOT PLANNED — the maintainer REJECTED these\n"
         "Do not propose these again, and do not propose close variations of "
