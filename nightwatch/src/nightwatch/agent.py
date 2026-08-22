@@ -182,6 +182,7 @@ def select_issue(repo: Repository, settings: Settings) -> int | None:
 # SECURITY.md (threat #3) for why GITHUB_TOKEN is kept off workflow files.
 _WORKFLOW_PUSH_REJECTION = "create or update workflow"
 _BLOCKED_MARKER = "<!-- nightwatch:workflow-push-blocked -->"
+_NO_CHANGES_MARKER = "<!-- nightwatch:no-changes -->"
 
 
 def try_push(branch: str, *, force: bool) -> bool:
@@ -220,6 +221,10 @@ def workflow_blocked_comment() -> str:
 
 def already_blocked(existing) -> bool:
     return any(_BLOCKED_MARKER in (c.body or "") for c in existing)
+
+
+def already_noted_no_changes(comments) -> bool:
+    return any(_NO_CHANGES_MARKER in (c.body or "") for c in comments)
 
 
 def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
@@ -262,10 +267,12 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
 
     if not working_tree_dirty():
         log(f"opencode produced no changes for issue #{issue_number}.")
-        issue.create_comment(
-            "🌙 nightwatch-agent looked at this issue but did not produce any changes "
-            "this run. It will retry on the next scheduled run."
-        )
+        if not already_noted_no_changes(issue.get_comments()):
+            issue.create_comment(
+                _NO_CHANGES_MARKER + "\n"
+                "🌙 nightwatch-agent looked at this issue but did not produce any changes "
+                "this run. It will retry on the next scheduled run."
+            )
         return
 
     run(["git", "switch", "-C", branch])
@@ -366,9 +373,11 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
 
     if not working_tree_dirty():
         log(f"opencode produced no changes for PR #{pr_number}.")
-        pr.create_issue_comment(
-            "🌙 nightwatch-agent reviewed the feedback but did not produce any changes this run."
-        )
+        if not already_noted_no_changes(pr.get_issue_comments()):
+            pr.create_issue_comment(
+                _NO_CHANGES_MARKER + "\n"
+                "🌙 nightwatch-agent reviewed the feedback but did not produce any changes this run."
+            )
         return
 
     run(["git", "add", "-A"])
