@@ -31,13 +31,24 @@ Optional env: ``OPENCODE_MODEL``, ``OPENCODE_VARIANT`` (default ``high``),
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass
 from itertools import islice
 
 from github import Github
 from github.Repository import Repository
 
-from foundry_core import Opencode, ensure_label, env, env_float, env_int, log
+from daydream import __version__
+from foundry_core import (
+    Opencode,
+    RunResult,
+    ensure_label,
+    env,
+    env_float,
+    env_int,
+    log,
+    write_summary,
+)
 from foundry_core.artifact import read_json_artifact
 
 # opencode writes the chosen issue here (in the consumer's checked-out repo).
@@ -220,20 +231,21 @@ def build_instructions() -> str:
 # --------------------------------------------------------------------------- #
 
 
-def create_issue(repo: Repository, settings: Settings, data: dict) -> bool:
+def create_issue(repo: Repository, settings: Settings, data: dict) -> str | None:
+    """Create a GitHub issue. Returns the issue URL on success, None otherwise."""
     category = (data.get("category") or "").lower()
     if category == "none":
         log("opencode decided there is no worthwhile issue to create this run.")
-        return False
+        return None
     if category not in ("idea", "maintenance"):
         log(f"Skipping: unknown category {category!r}.")
-        return False
+        return None
 
     title = (data.get("title") or "").strip()
     body = (data.get("body") or "").strip()
     if not title or not body:
         log("Skipping: artifact missing title or body.")
-        return False
+        return None
 
     category_label = (
         settings.idea_label if category == "idea" else settings.maintenance_label
@@ -246,13 +258,14 @@ def create_issue(repo: Repository, settings: Settings, data: dict) -> bool:
     issue = repo.create_issue(title=title, body=body)
     issue.set_labels(settings.base_label, category_label)
     log(f"Opened {category} issue #{issue.number}: {issue.title} — {issue.html_url}")
-    return True
+    return issue.html_url
 
 
 # --------------------------------------------------------------------------- #
 
 
-def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> bool:
+def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> str | None:
+    """Run one round of issue proposal. Returns the issue URL or None."""
     opencode.plan_then_build(
         build_prompt(repo, settings),
         build_instructions(),
@@ -261,23 +274,35 @@ def propose_one(repo: Repository, settings: Settings, opencode: Opencode) -> boo
     )
     data = read_json_artifact(os.path.join(os.getcwd(), ARTIFACT))
     if data is None:
-        return False
+        return None
     return create_issue(repo, settings, data)
 
 
 def main() -> None:
+    t0 = time.monotonic()
     settings = Settings.from_env()
     opencode = Opencode.from_env()
 
     repo = Github(settings.token).get_repo(settings.repo_name)
     created = 0
+    last_url: str | None = None
     for _ in range(settings.max_issues):
-        if propose_one(repo, settings, opencode):  # counts/context recomputed each round to rebalance
+        url = propose_one(repo, settings, opencode)
+        if url:
             created += 1
+            last_url = url
         else:
             log("Nothing to create this round; stopping.")
             break
     log(f"daydream-agent created {created} issue(s).")
+    write_summary(RunResult(
+        agent="daydream",
+        version=__version__,
+        action=f"Created {created} issue(s)" if created else "No issues created",
+        url=last_url,
+        duration_s=time.monotonic() - t0,
+        model=opencode.model,
+    ))
 
 
 if __name__ == "__main__":

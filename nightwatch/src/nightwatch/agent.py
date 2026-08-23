@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import itertools
 import subprocess
+import time
 from dataclasses import dataclass
 
 from github import Github
@@ -37,13 +38,16 @@ from github.Repository import Repository
 
 from foundry_core import (
     Opencode,
+    RunResult,
     env,
     env_int,
     log,
     references_issue,
     run,
     working_tree_dirty,
+    write_summary,
 )
+from nightwatch import __version__
 
 PLAN_INSTRUCTIONS = (
     "## First: plan only\n"
@@ -222,11 +226,11 @@ def already_blocked(existing) -> bool:
     return any(_BLOCKED_MARKER in (c.body or "") for c in existing)
 
 
-def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
+def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> tuple[str, str | None]:
     issue_number = select_issue(repo, settings)
     if issue_number is None:
         log("No eligible open issue to work on. Nothing to do.")
-        return
+        return ("No eligible issue to work on", None)
 
     issue = repo.get_issue(issue_number)
     branch = settings.branch_for(issue_number)
@@ -266,7 +270,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
             "🌙 nightwatch-agent looked at this issue but did not produce any changes "
             "this run. It will retry on the next scheduled run."
         )
-        return
+        return ("No changes produced", None)
 
     run(["git", "switch", "-C", branch])
     run(["git", "add", "-A"])
@@ -286,7 +290,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
         log(f"Issue #{issue_number} needs workflow-file changes this token can't push.")
         if not already_blocked(issue.get_comments()):
             issue.create_comment(workflow_blocked_comment())
-        return
+        return ("Workflow push blocked", None)
 
     body = (
         f"🌙 **Automated proposal by [nightwatch-agent](https://github.com/chamoda/agent-foundry)** for #{issue_number}.\n\n"
@@ -304,6 +308,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
         head=branch,
     )
     log(f"Opened PR #{pr.number} for issue #{issue_number}: {pr.html_url}")
+    return (f"Opened PR #{pr.number}", pr.html_url)
 
 
 # --------------------------------------------------------------------------- #
@@ -311,7 +316,7 @@ def run_issue_mode(repo: Repository, settings: Settings, opencode: Opencode) -> 
 # --------------------------------------------------------------------------- #
 
 
-def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) -> None:
+def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) -> tuple[str, str | None]:
     if not settings.pr_number or not settings.pr_branch:
         raise SystemExit("Missing required env var: PR_NUMBER / PR_BRANCH")
     pr_number = int(settings.pr_number)
@@ -369,7 +374,7 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
         pr.create_issue_comment(
             "🌙 nightwatch-agent reviewed the feedback but did not produce any changes this run."
         )
-        return
+        return ("No changes produced", None)
 
     run(["git", "add", "-A"])
     run(["git", "commit", "-m", f"nightwatch: address review feedback on #{pr_number}"])
@@ -377,17 +382,19 @@ def run_revision_mode(repo: Repository, settings: Settings, opencode: Opencode) 
         log(f"PR #{pr_number} needs workflow-file changes this token can't push.")
         if not already_blocked(pr.get_issue_comments()):
             pr.create_issue_comment(workflow_blocked_comment())
-        return
+        return ("Workflow push blocked", None)
     pr.create_issue_comment(
         "🌙 nightwatch-agent pushed changes addressing the latest review feedback. Please re-review."
     )
     log(f"Updated PR #{pr_number}.")
+    return (f"Updated PR #{pr_number}", pr.html_url)
 
 
 # --------------------------------------------------------------------------- #
 
 
 def main() -> None:
+    t0 = time.monotonic()
     settings = Settings.from_env()
     opencode = Opencode.from_env()
 
@@ -396,9 +403,17 @@ def main() -> None:
 
     repo = Github(settings.token).get_repo(settings.repo_name)
     if settings.event == "pull_request_review":
-        run_revision_mode(repo, settings, opencode)
+        action, url = run_revision_mode(repo, settings, opencode)
     else:
-        run_issue_mode(repo, settings, opencode)
+        action, url = run_issue_mode(repo, settings, opencode)
+    write_summary(RunResult(
+        agent="nightwatch",
+        version=__version__,
+        action=action,
+        url=url,
+        duration_s=time.monotonic() - t0,
+        model=opencode.model,
+    ))
 
 
 if __name__ == "__main__":

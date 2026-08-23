@@ -41,14 +41,16 @@ import itertools
 import os
 import re
 import sys
+import time
 from dataclasses import dataclass
 
 from github import Github, GithubException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from foundry_core import Opencode, env, env_int, log, run
+from foundry_core import Opencode, RunResult, env, env_int, log, run, write_summary
 from foundry_core.artifact import read_json_artifact
+from warden import __version__
 
 # opencode writes the review here (in the consumer's checked-out repo).
 ARTIFACT = "warden_review.json"
@@ -469,6 +471,7 @@ def post_review(
 
 
 def main() -> None:
+    t0 = time.monotonic()
     settings = Settings.from_env()
     opencode = Opencode.from_env()
 
@@ -476,6 +479,14 @@ def main() -> None:
     pr = repo.get_pull(settings.pr_number)
     if pr.state != "open":
         log(f"PR #{pr.number} is {pr.state}; warden only reviews open PRs.")
+        write_summary(RunResult(
+            agent="warden",
+            version=__version__,
+            action=f"Skipped — PR is {pr.state}",
+            url=pr.html_url,
+            duration_s=time.monotonic() - t0,
+            model=opencode.model,
+        ))
         return
 
     head_sha = pr.head.sha
@@ -484,6 +495,14 @@ def main() -> None:
 
     if last_sha == head_sha:
         log(f"PR #{pr.number} already reviewed at {head_sha[:7]}; nothing to do.")
+        write_summary(RunResult(
+            agent="warden",
+            version=__version__,
+            action="Already reviewed — nothing to do",
+            url=pr.html_url,
+            duration_s=time.monotonic() - t0,
+            model=opencode.model,
+        ))
         return
 
     incremental = last_sha is not None
@@ -494,6 +513,14 @@ def main() -> None:
     if not files:
         log(f"No changed files in {diff_range}; updating state and stopping.")
         upsert_state(pr, state_comment, head_sha, 0)
+        write_summary(RunResult(
+            agent="warden",
+            version=__version__,
+            action="No changed files to review",
+            url=pr.html_url,
+            duration_s=time.monotonic() - t0,
+            model=opencode.model,
+        ))
         return
 
     log(
@@ -517,6 +544,14 @@ def main() -> None:
     posted = post_review(repo, pr, head_sha, summary, comments)
     upsert_state(pr, state_comment, head_sha, posted)
     log(f"Posted {posted} inline comment(s) on PR #{pr.number}.")
+    write_summary(RunResult(
+        agent="warden",
+        version=__version__,
+        action=f"Posted {posted} inline comment(s) on PR #{pr.number}",
+        url=pr.html_url,
+        duration_s=time.monotonic() - t0,
+        model=opencode.model,
+    ))
 
 
 if __name__ == "__main__":
