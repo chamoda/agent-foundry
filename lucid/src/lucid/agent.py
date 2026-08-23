@@ -34,13 +34,15 @@ from __future__ import annotations
 import math
 import os
 import sys
+import time
 from dataclasses import dataclass
 
 from github import Github
 from github.Issue import Issue
 
-from foundry_core import Opencode, ensure_label, env, log
+from foundry_core import Opencode, RunResult, ensure_label, env, log, write_summary
 from foundry_core.artifact import read_json_artifact
+from lucid import __version__
 
 # opencode writes the score here (in the consumer's checked-out repo).
 ARTIFACT = "lucid_score.json"
@@ -322,6 +324,7 @@ def apply_score_label(issue: Issue, method: str, score: int) -> None:
 
 
 def main() -> None:
+    t0 = time.monotonic()
     log(
         "⚠️ DEPRECATION: lucid-agent is deprecated and no longer actively "
         "maintained. It still runs when pinned to @v1 but may be removed in a "
@@ -334,6 +337,14 @@ def main() -> None:
     issue = repo.get_issue(settings.issue_number)
     if issue.pull_request is not None:
         log(f"#{settings.issue_number} is a pull request; lucid only scores issues.")
+        write_summary(RunResult(
+            agent="lucid",
+            version=__version__,
+            action="Skipped — target is a pull request",
+            url=issue.html_url,
+            duration_s=time.monotonic() - t0,
+            model=opencode.model,
+        ))
         return
     log(f"Scoring issue #{issue.number} ({settings.method.upper()}): {issue.title}")
 
@@ -363,6 +374,14 @@ def main() -> None:
     log(
         f"Posted {settings.method.upper()} score {score}/10 on issue #{issue.number}."
     )
+    write_summary(RunResult(
+        agent="lucid",
+        version=__version__,
+        action=f"Scored issue #{issue.number} ({settings.method.upper()}: {score}/10)",
+        url=issue.html_url,
+        duration_s=time.monotonic() - t0,
+        model=opencode.model,
+    ))
 
 
 if __name__ == "__main__":
