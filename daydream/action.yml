@@ -21,7 +21,7 @@ inputs:
   model:
     description: "opencode model id (provider/model)."
     required: false
-    default: "opencode/mimo-v2.5-free"
+    default: "opencode/mimo-v2.6-flash-free"
   variant:
     description: "Reasoning effort passed to `opencode run --variant` (high/max/minimal). Empty to disable."
     required: false

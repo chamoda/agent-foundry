@@ -88,7 +88,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `github-token` | `${{ github.token }}` | Token used to read the PR/diff and post inline comments. |
 | `opencode-api-key` | `""` | OpenCode Zen API key, only if the model requires auth. |
 | `mcp-config` | `.mcp.json` | Project MCP config (Claude Code `.mcp.json` format) whose servers are exposed to opencode. Empty disables it. |
-| `model` | `opencode/mimo-v2.5-free` | opencode model id (`provider/model`). |
+| `model` | `opencode/mimo-v2.6-flash-free` | opencode model id (`provider/model`). |
 | `variant` | `high` | Reasoning effort (`high`/`max`/`minimal`); empty disables. |
 | `plan` | `true` | Orient (read-only) before reviewing. `false` = single pass. |
 | `review-file` | `REVIEW.md` | Path to the maintainer review-guidance file. |

@@ -24,7 +24,7 @@ jobs:
       - uses: chamoda/agent-foundry/daydream@v1
 ```
 
-No secrets needed: `github-token` defaults to the workflow's `${{ github.token }}` and the default model is the free OpenCode Zen `opencode/mimo-v2.5-free`. Add `opencode-api-key` only if you switch to a model that needs auth.
+No secrets needed: `github-token` defaults to the workflow's `${{ github.token }}` and the default model is the free OpenCode Zen `opencode/mimo-v2.6-flash-free`. Add `opencode-api-key` only if you switch to a model that needs auth.
 
 See each agent's README ([nightwatch](nightwatch/README.md), [daydream](daydream/README.md), [lucid](lucid/README.md), [warden](warden/README.md)) for inputs, required permissions, and details.
 

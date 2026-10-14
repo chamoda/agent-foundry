@@ -76,7 +76,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `github-token` | `${{ github.token }}` | Token used to read the issue and post the comment. |
 | `opencode-api-key` | `""` | OpenCode Zen API key, only if the model requires auth. |
 | `mcp-config` | `.mcp.json` | Project MCP config (Claude Code `.mcp.json` format) whose servers are exposed to opencode. Empty disables it. |
-| `model` | `opencode/mimo-v2.5-free` | opencode model id (`provider/model`). |
+| `model` | `opencode/mimo-v2.6-flash-free` | opencode model id (`provider/model`). |
 | `variant` | `high` | Reasoning effort (`high`/`max`/`minimal`); empty disables. |
 | `plan` | `true` | Research (read-only) before scoring. `false` = single pass. |
 | `method` | `ice` | Scoring method: `ice` or `rice`. |

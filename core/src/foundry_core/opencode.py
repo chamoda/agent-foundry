@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from foundry_core.config import env, env_bool, env_int
 from foundry_core.shell import log, run
 
-DEFAULT_MODEL = "opencode/mimo-v2.5-free"
+DEFAULT_MODEL = "opencode/mimo-v2.6-flash-free"
 
 # A project's MCP servers live in `.mcp.json` (the convention Claude Code /
 # Cursor use). opencode does not read that file — it wants an `mcp` block in its

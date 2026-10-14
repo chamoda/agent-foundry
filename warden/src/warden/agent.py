@@ -90,6 +90,11 @@ BUILD_LEAD_IN = "Now write your review."
 MAX_FEEDBACK = 15
 SNIPPET = 240
 
+# Cap on files listed in the prompt. The prompt is passed to opencode as one
+# argv argument, which Linux limits to 128 KiB — a PR touching thousands of
+# files would otherwise fail with "Argument list too long".
+MAX_LISTED_FILES = 200
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -295,10 +300,14 @@ def build_prompt(
         if incremental
         else f"Review the changes in `{diff_range}` (the full pull request diff)."
     )
+    listed = [f"- {f}" for f in files[:MAX_LISTED_FILES]]
+    if len(files) > MAX_LISTED_FILES:
+        listed.append(
+            f"- …and {len(files) - MAX_LISTED_FILES} more "
+            f"(run `git diff --stat {diff_range}` to see them all)"
+        )
     file_list = (
-        "## Files changed in this range\n" + "\n".join(f"- {f}" for f in files)
-        if files
-        else ""
+        "## Files changed in this range\n" + "\n".join(listed) if files else ""
     )
     return "\n".join(
         filter(

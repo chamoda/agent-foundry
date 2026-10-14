@@ -73,7 +73,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 | `github-token` | `${{ github.token }}` | Token for the issues/PR API. See the PAT note below. |
 | `opencode-api-key` | `""` | OpenCode Zen API key, only if the model requires auth. |
 | `mcp-config` | `.mcp.json` | Project MCP config (Claude Code `.mcp.json` format) whose servers are exposed to opencode. Empty disables it. |
-| `model` | `opencode/mimo-v2.5-free` | opencode model id (`provider/model`). |
+| `model` | `opencode/mimo-v2.6-flash-free` | opencode model id (`provider/model`). |
 | `variant` | `high` | Reasoning effort (`high`/`max`/`minimal`); empty disables. |
 | `plan` | `true` | Plan (read-only) before building. `false` = single build pass. |
 | `max-attempts` | `3` | Stop retrying an issue after this many rejected PRs. |
@@ -91,7 +91,7 @@ That's the whole setup — `github-token` defaults to the workflow's `${{ github
 
 ## How model auth works
 
-The default model is the free OpenCode Zen model `opencode/mimo-v2.5-free`. If a run fails with an auth error, create a key at [opencode.ai](https://opencode.ai) and set it as the `OPENCODE_API_KEY` secret — opencode picks it up automatically.
+The default model is the free OpenCode Zen model `opencode/mimo-v2.6-flash-free`. If a run fails with an auth error, create a key at [opencode.ai](https://opencode.ai) and set it as the `OPENCODE_API_KEY` secret — opencode picks it up automatically.
 
 ## MCP tools
 
